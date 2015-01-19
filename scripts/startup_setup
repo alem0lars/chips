@@ -1,0 +1,79 @@
+#!/usr/bin/env zsh
+
+
+# configuration {{{
+
+typeset -A _workspaces
+_workspaces=(
+  ref 0 wflow_0 1 wflow_1 2 wflow_supp_0 3 wflow_supp_1 4 org 5
+  social 6 mgmt 7 tmp 8
+)
+_initial_workspace_name="ref"
+
+_user_email=`git config --get user.email`
+if [[ -z "${_user_email}" ]]; then
+  notify-send "skipping startup" "invalid git user.email configuration"
+  exit -1
+fi
+
+# }}}
+
+
+# prompt for login {{{
+
+wmctrl -s ${(v)_workspaces[tmp]}
+openterm --title "lpass login" --cmd "lpass login ${_user_email}"
+lpass sync
+if [[ $? -eq 0 ]]; then
+  _logged_in=1
+else
+  _logged_in=0
+fi
+
+# }}}
+
+
+if [[ ${_logged_in} -ne 0 ]]; then
+
+  # initial workspace
+  wmctrl -s ${(v)_workspaces[${_initial_workspace_name}]}
+
+  # open social software {{{
+
+  openterm --title "mutt" --cmd "mutt" &
+  openterm --title "weechat" --cmd "weechat" &
+  openterm --title "turses" --cmd "turses" &
+  sleep 1
+  wmctrl -r "mutt" -t ${(v)_workspaces[social]}
+  wmctrl -r "weechat" -t ${(v)_workspaces[social]}
+  wmctrl -r "turses" -t ${(v)_workspaces[social]}
+
+  # }}}
+
+
+  # open org software {{{
+
+  openterm --title "taskwarrior" --cmd "task list" &
+  sleep 1
+  wmctrl -r "taskwarrior" -t ${(v)_workspaces[org]}
+
+  # }}}
+
+
+  # open wflow software {{{
+
+  openterm --title "vim" --cmd "vim" &
+  sleep 1
+  wmctrl -r "vim" -t ${(v)_workspaces[wflow_0]}
+
+  # }}}
+
+
+  # open ref software {{{
+
+  firefox &
+  sleep 1
+  wmctrl -r "firefox" -t ${(v)_workspaces[ref]}
+
+  # }}}
+fi

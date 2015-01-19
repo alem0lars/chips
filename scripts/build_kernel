@@ -1,0 +1,20 @@
+#!/bin/sh
+
+
+img_dest="/boot/kernel-gentoo"
+
+
+cd /usr/src/linux
+
+echo ">> Compiling."
+make
+
+echo ">> Installing modules"
+make modules_install
+
+echo ">> Copying the kernel image to ${img_dest}"
+cp arch/x86_64/boot/bzImage ${img_dest}
+
+
+unset img_dest
+
