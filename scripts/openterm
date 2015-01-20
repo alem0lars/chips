@@ -8,6 +8,12 @@ autoload colors && colors
 
 _script_name=$(basename "$0")
 _default_title="term_$(cat < /dev/urandom |tr -dc 'a-z0-9'|fold -w 8|head -n 1)"
+pidof urxvtd
+if [[ $? -eq 0 ]]; then
+  _urxvt_cmd="urxvtc"
+else
+  _urxvt_cmd="urxvt"
+fi
 
 # }}}
 
@@ -67,15 +73,15 @@ else # entry point {{{
 
   if [[ ${_with_cmd} -eq 0 ]];then
     if [[ ${_with_tmux} -eq 0 ]]; then
-      TMUX="" urxvt -title "${_title}" -e zsh -i
+      TMUX="" ${_urxvt_cmd} -title "${_title}" -e zsh -i
     else
-      TMUX="" urxvt -title "${_title}" -e zsh -i -c "tmux new-session"
+      TMUX="" ${_urxvt_cmd} -title "${_title}" -e zsh -i -c "tmux new-session"
     fi
   else
     if [[ ${_with_tmux} -eq 0 ]]; then
-      TMUX="" urxvt -title "${_title}" -e zsh -i -c "${_cmd}"
+      TMUX="" ${_urxvt_cmd} -title "${_title}" -e zsh -i -c "${_cmd}"
     else
-      TMUX="" urxvt -title "${_title}" -e zsh -i -c \
+      TMUX="" ${_urxvt_cmd} -title "${_title}" -e zsh -i -c \
         "tmux new-session \"${_cmd}\""
     fi
   fi
