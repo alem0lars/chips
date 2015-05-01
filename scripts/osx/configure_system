@@ -309,6 +309,11 @@ system_configuration = proc do |c|
 
   # }}}
   
+  # {{{ Create basic directories.
+  
+  c.mkdir msg: "Creating the user's temporary directory.",
+          path: "~/tmp"
+  
 end
 
 
@@ -384,17 +389,29 @@ class CommandsExecutor # {{{
 
   # {{{ DSL.
   
-  def syssetup(name: nil, value: nil, question: nil, msg: nil, as_root: false)
+  def mkdir(msg: nil, path: nil, as_root: false)
+    error("Missing `path`.") if path.nil?
+    
+    Array(path).each do |n|
+      @commands << {
+        msg:     msg,
+        cmd:     "mkdir -p \"#{path}\"",
+        as_root: as_root
+      }
+    end
+  end
+  
+  def syssetup(name: nil, value: nil, question: nil, msg: nil)
     error("Missing `name`.") if name.nil?
-    error("Missing `name` or `question`.") if value.nil? && question.nil?
+    error("Missing `value` or `question`.") if value.nil? && question.nil?
     
     value = ask(question) if question
 
     Array(name).each do |n|
       @commands << {
-        msg: msg,
-        cmd: "sudo systemsetup -#{n} \"#{value}\"",
-        as_root: as_root
+        msg:     msg,
+        cmd:     "systemsetup -#{n} \"#{value}\"",
+        as_root: true # systemsetup can be run only by root user.
       }
     end
   end
@@ -412,17 +429,17 @@ class CommandsExecutor # {{{
     end
   end
   
-  def sysconfig(msg: nil, name: nil, value: nil, question: nil, as_root: false)
+  def sysconfig(msg: nil, name: nil, value: nil, question: nil)
     error("Missing `name`.") if name.nil?
-    error("Missing `name` or `question`.") if value.nil? && question.nil?
+    error("Missing `value` or `question`.") if value.nil? && question.nil?
     
     value = ask(question) if question
 
     Array(name).each do |n|
       @commands << {
-        msg: msg,
-        cmd: "sudo scutil --set \"#{n}\" \"#{value}\"",
-        as_root: as_root
+        msg:     msg,
+        cmd:     "scutil --set \"#{n}\" \"#{value}\"",
+        as_root: true # scutil can only be run as root user.
       }
     end
   end
@@ -442,8 +459,8 @@ class CommandsExecutor # {{{
     
     Array(name).each do |n|
       @commands << {
-        msg: msg,
-        cmd: "defaults write \"#{domain}\" \"#{name}\" -#{type} #{value_param}",
+        msg:     msg,
+        cmd:     "defaults write \"#{domain}\" \"#{name}\" -#{type} #{value_param}",
         as_root: as_root
       }
     end
