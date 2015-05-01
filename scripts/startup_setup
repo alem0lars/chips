@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
 
-# configuration {{{
+# {{{ Configuration.
 
 typeset -A _workspaces
 _workspaces=(
@@ -18,8 +18,7 @@ fi
 
 # }}}
 
-
-# prompt for login {{{
+# {{{ Prompt for login.
 
 wmctrl -s ${(v)_workspaces[tmp]}
 openterm --title "lpass login" --cmd "lpass login ${_user_email}"
@@ -32,13 +31,12 @@ fi
 
 # }}}
 
-
 if [[ ${_logged_in} -ne 0 ]]; then
 
-  # initial workspace
+  # Initial workspace.
   wmctrl -s ${(v)_workspaces[${_initial_workspace_name}]}
 
-  # open social software {{{
+  # {{{ Open `social` software.
 
   openterm --title "mutt" --cmd "mutt" &
   openterm --title "weechat" --cmd "weechat" &
@@ -50,8 +48,7 @@ if [[ ${_logged_in} -ne 0 ]]; then
 
   # }}}
 
-
-  # open org software {{{
+  # {{{ Open `org` software.
 
   openterm --title "taskwarrior" --cmd "task list" &
   sleep 1
@@ -59,8 +56,7 @@ if [[ ${_logged_in} -ne 0 ]]; then
 
   # }}}
 
-
-  # open wflow software {{{
+  # {{{ Open `wflow` software.
 
   openterm --title "vim" --cmd "vim" &
   sleep 1
@@ -68,8 +64,7 @@ if [[ ${_logged_in} -ne 0 ]]; then
 
   # }}}
 
-
-  # open ref software {{{
+  # {{{ Open `ref` software.
 
   firefox &
   sleep 1
@@ -77,3 +72,6 @@ if [[ ${_logged_in} -ne 0 ]]; then
 
   # }}}
 fi
+
+
+# vim: set filetype=zsh :
