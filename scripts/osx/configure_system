@@ -286,6 +286,8 @@ system_configuration = proc do |c|
 
   # }}}
   
+  # {{{ Screensaver.
+  
   c.default msg: "Require password after sleep or screen saver begins.",
             domain: "com.apple.screensaver", 
             name: "askForPassword", 
@@ -296,11 +298,17 @@ system_configuration = proc do |c|
             name: "askForPasswordDelay",
             value: 0
 
+  # }}}
+  
+  # {{{ Screencapture.
+  
   c.default msg: "Set screenshot format to PNG.",
             domain: "com.apple.screencapture", 
             name: "type", 
             value: "png"
 
+  # }}}
+  
 end
 
 
