@@ -140,6 +140,8 @@ system_configuration = proc do |c|
             name:   "DSDontWriteNetworkStores", 
             value:  true
 
+  # {{{ Finder.
+
   c.default msg: "Disable the warning when changing a file extension.",
             domain: "com.apple.finder", 
             name: "FXEnableExtensionChangeWarning", 
@@ -164,6 +166,125 @@ system_configuration = proc do |c|
             domain: "com.apple.finder", 
             name: "QLEnableTextSelection", 
             value: true
+  
+  c.plist msg:  "Show item info near icons in other icon views",
+          cmd:  ["Set :DesktopViewSettings:IconViewSettings:showItemInfo true",
+                 "Set :StandardViewSettings:IconViewSettings:showItemInfo true",
+                 "Set :FK_StandardViewSettings:IconViewSettings:showItemInfo true"],
+          path: "~/Library/Preferences/com.apple.finder.plist"
+
+  c.plist msg:  "Show item info to the right of the icons on the desktop.",
+          cmd:  "Set DesktopViewSettings:IconViewSettings:labelOnBottom false",
+          path: "~/Library/Preferences/com.apple.finder.plist"
+
+  c.plist msg: "Enable snap-to-grid for icons on the desktop and in other icon views.",
+          cmd: ["Set :DesktopViewSettings:IconViewSettings:arrangeBy grid",
+                "Set :FK_StandardViewSettings:IconViewSettings:arrangeBy grid",
+                "Set :StandardViewSettings:IconViewSettings:arrangeBy grid"],
+          path: "~/Library/Preferences/com.apple.finder.plist"
+
+  c.plist msg:  "Set grid spacing for icons on the desktop and in other icon views.",
+          cmd:  ["Set :DesktopViewSettings:IconViewSettings:gridSpacing 100",
+                 "Set :FK_StandardViewSettings:IconViewSettings:gridSpacing 100",
+                 "Set :StandardViewSettings:IconViewSettings:gridSpacing 100"],
+          path: "~/Library/Preferences/com.apple.finder.plist"
+
+  c.plist msg:  "Set the size of icons on the desktop and in other icon views.",
+          cmd:  ["Set :DesktopViewSettings:IconViewSettings:iconSize 80",
+                 "Set :FK_StandardViewSettings:IconViewSettings:iconSize 80",
+                 "Set :StandardViewSettings:IconViewSettings:iconSize 80"],
+          path: "~/Library/Preferences/com.apple.finder.plist"
+  
+  # }}}
+
+  # {{{ Dock and Mission Control.
+
+  c.default msg:    "Setting the icon size of Dock items to 36 pixels for optimal size/screen-realestate",
+            domain: "com.apple.dock",
+            name:   "tilesize",
+            value:  36
+            
+  c.default msg:    "In Mission Control group windows by application.",
+            domain: "com.apple.dock",
+            name:   "expose-group-by-app",
+            value:  true
+            
+  # }}}
+  
+  # {{{ WebBrowsers (Chrome & Safari) and WebKit.
+
+  c.default msg:    "Disable universal search (don’t send search queries to Apple).",
+            domain: "com.apple.Safari",
+            name:   "UniversalSearchEnabled",
+            value:  false
+            
+  c.default msg:    "Disable search suggestions (don’t send search queries to Apple).",
+            domain: "com.apple.Safari",
+            name:   "SuppressSearchSuggestions",
+            value:  true
+            
+  c.default msg:    "Hide Safari's bookmarks bar by default.",
+            domain: "com.apple.Safari",
+            name:   "ShowFavoritesBar",
+            value:  false
+ 
+  c.default msg:    "Hide Safari's sidebar in Top Sites.",
+            domain: "com.apple.Safari",
+            name:   "ShowSidebarInTopSites",
+            value:  false
+ 
+  c.default msg:    "Disable Safari's thumbnail cache for History and Top Sites.",
+            domain: "com.apple.Safari",
+            name:   "DebugSnapshotsUpdatePolicy",
+            value:  2
+ 
+  c.default msg:    "Enable Safari's debug menu.",
+            domain: "com.apple.Safari",
+            name:   "IncludeInternalDebugMenu",
+            value:  true
+ 
+  c.default msg:    "Make Safari's search banners default to Contains instead of Starts With."
+            domain: "com.apple.Safari",
+            name:    "FindOnPageMatchesWordStartsOnly",
+            value:   false
+
+  c.default msg:    "Remove useless icons from Safari's bookmarks bar.",
+            domain: "com.apple.Safari",
+            name:   "ProxiesInBookmarksBar",
+            value:  "()"
+ 
+  c.default msg:    "Enable the Develop menu and the Web Inspector in Safari.",
+            domain: "com.apple.Safari",
+            name:   ["IncludeDevelopMenu",
+                     "WebKitDeveloperExtrasEnabledPreferenceKey",
+                     "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled"],
+            value:  true
+ 
+  c.default msg:   "Adding a context menu item for showing the Web Inspector in web views.",
+            name:  "WebKitDeveloperExtras",
+            value: true
+
+  c.default msg:    "Disable the annoying backswipe in Chrome.",
+            domain: "com.google.Chrome",
+            name:   "AppleEnableSwipeNavigateWithScrolls",
+            value:  false
+            
+  c.default msg:    "Disable the annoying backswipe in Chrome Canary.",
+            domain: "com.google.Chrome.canary",
+            name:   "AppleEnableSwipeNavigateWithScrolls",
+            value:  false
+
+  c.default msg:    "Use the system-native print preview dialog in Chrome.",
+            domain: "com.google.Chrome",
+            name:   "DisablePrintPreview",
+            value:  true
+            
+  c.default msg:    "Use the system-native print preview dialog in Chrome Canary.",
+            domain: "com.google.Chrome.canary",
+            name:   "DisablePrintPreview",
+            value:  true
+
+  # }}}
   
   c.default msg: "Require password after sleep or screen saver begins.",
             domain: "com.apple.screensaver", 
@@ -259,20 +380,43 @@ class CommandsExecutor # {{{
     error("Missing `name`.") if name.nil?
     error("Missing `name` or `question`.") if value.nil? && question.nil?
     
-    name = [name] unless name.respond_to?(:each)
     value = ask(question) if question
 
-    name.each { |n| systemsetup(n, value, msg, as_root) }
+    Array(name).each do |n|
+      @commands << {
+        msg: msg,
+        cmd: "sudo systemsetup -#{n} \"#{value}\"",
+        as_root: as_root
+      }
+    end
+  end
+  
+  def plist(msg: msg, cmd: nil, path: nil, as_root: false)
+    error("Missing `cmd`.") if cmd.nil?
+    error("Missing `path`.") if path.nil?
+    
+    Array(cmd).each do |c|
+      @commands << {
+        msg: msg,
+        cmd: "/usr/libexec/PlistBuddy -c \"#{c}\" \"#{path}\"",
+        as_root: as_root
+      }
+    end
   end
   
   def sysconfig(msg: nil, name: nil, value: nil, question: nil, as_root: false)
     error("Missing `name`.") if name.nil?
     error("Missing `name` or `question`.") if value.nil? && question.nil?
     
-    name = [name] unless name.respond_to?(:each)
     value = ask(question) if question
 
-    name.each { |n| scutil_write(n, value, msg, as_root) }
+    Array(name).each do |n|
+      @commands << {
+        msg: msg,
+        cmd: "sudo scutil --set \"#{n}\" \"#{value}\"",
+        as_root: as_root
+      }
+    end
   end
   
   def default(msg: nil, domain: :global, name: nil, value: nil, question: nil, type: nil, as_root: false)
@@ -284,10 +428,17 @@ class CommandsExecutor # {{{
       value = type.nil? ? ask(question) : ask(question, type: type) 
     end
     type = type_from_value(value) if type.nil?
-    name = [name] unless name.respond_to?(:each)
+    error("Unknown type `#{type}`.") unless %i(string bool int float array).include?(type)
     domain = "NSGlobalDomain" if domain == :global
-
-    name.each { |n| defaults_write(type, n, value, domain, msg, as_root) }
+    value_param = type == :array ? value.map{ |v| "\"#{v}\"" }.join(" ") : "\"#{value}\""
+    
+    Array(name).each do |n|
+      @commands << {
+        msg: msg,
+        cmd: "defaults write \"#{domain}\" \"#{name}\" -#{type} #{value_param}",
+        as_root: as_root
+      }
+    end
   end
   
   # }}}
@@ -307,37 +458,6 @@ class CommandsExecutor # {{{
         system(command_info[:cmd])
       end
     end
-  end
-
-  private
-  
-  def systemsetup(name, value, msg, as_root)
-    @commands << {
-      msg: msg,
-      cmd: "sudo systemsetup -#{name} \"#{value}\"",
-      as_root: as_root
-    }
-  end
-  
-  def scutil_write(name, value, msg, as_root)
-    @commands << {
-      msg: msg,
-      cmd: "sudo scutil --set \"#{name}\" \"#{value}\"",
-      as_root: as_root
-    }
-  end
-  
-  def defaults_write(type, name, value, domain, msg, as_root)
-    type = type.to_s.to_sym
-    error("Unknown type `#{type}`.") unless %i(string bool int float array).include?(type)
-    
-    value = type == :array ? value.map{ |v| "\"#{v}\"" }.join(" ") : "\"#{value}\""
-      
-    @commands << {
-      msg: msg,
-      cmd: "defaults write \"#{domain}\" \"#{name}\" -#{type} #{value}",
-      as_root: as_root
-    }
   end
 
 end # }}}
