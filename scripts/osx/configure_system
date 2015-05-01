@@ -43,18 +43,19 @@ module Utils # {{{
       else
         answer
       end
+    when :int   then Integer(answer)
+    when :float then Float(answer)
     else
       error("Unhandled question type: `#{type}`.")
     end
   end # }}}
   
   def type_from_value(value) # {{{
-    if value.is_a?(TrueClass) || value.is_a?(FalseClass)
-      :bool
-    elsif value.is_a?(String)
-      :string
-    else
-      error("Don't know how to handle `#{value.class}`.")
+    if value.is_a?(TrueClass) || value.is_a?(FalseClass) then :bool
+    elsif value.is_a?(String) then :string
+    elsif value.is_a?(Integer) then :int
+    elsif value.is_a?(Float) then :float
+    else error("Don't know how to handle `#{value.class}`.")
     end
   end # }}}
   
@@ -70,7 +71,7 @@ class CommandsExecutor # {{{
 
   # {{{ DSL.
   
-  def syssetup(name: nil value: nil, question: nil)
+  def syssetup(name: nil, value: nil, question: nil)
     error("Missing `name`.") if name.nil?
     error("Missing `name` or `question`.") if value.nil? && question.nil?
     
@@ -135,6 +136,8 @@ class CommandsExecutor # {{{
     case type.to_s.to_sym
     when :string then type = "string"
     when :bool   then type = "bool"
+    when :int    then type = "int"
+    when :float  then type = "float"
     else error("Unknown type `#{type}`.")
     end
     @commands << "defaults write \"#{domain}\" \"#{name}\" -#{type} \"#{value}\""
@@ -175,6 +178,20 @@ PMPrintingExpandedStateForPrint = %w(
   PMPrintingExpandedStateForPrint2
 )
 
+DockAnimationsDuration = %w(
+  expose-animation-duration
+  autohide-time-modifier
+  autohide-delay
+  springboard-show-duration
+  springboard-hide-duration
+  springboard-page-duration
+)
+
+MailAnimationsDisable = %w(
+  DisableSendAnimations
+  DisableReplyAnimations
+)
+
 # }}}
 
 Main.run(dryrun: ARGV.include?("--dryrun")) do |c|
@@ -207,6 +224,25 @@ Main.run(dryrun: ARGV.include?("--dryrun")) do |c|
   c.default name: "ApplePressAndHoldEnabled", value: false
 
   # TODO: Remap Caps Lock to Control.
+  
+  c.info "Setting sidebar icon size to medium."
+  c.default name: "NSTableViewDefaultSizeMode", value: 1
+  
+  c.info "Always show scrollbars."
+  c.default name: "AppleShowScrollBars", value: "Always"
+  
+  c.info "Increase window resize speed."
+  c.default name: "NSWindowResizeTime", value: 0.001
+  
+  #c.info "Disable animations."
+  #c.default name: NSAutomaticWindowAnimationsEnabled, value: false
+  #c.default domain: "com.apple.finder", name: "DisableAllAnimations", value: true
+  #c.default domain: "com.apple.dock", name: DockAnimationsDuration, value: 0.0
+  #c.default domain: "com.apple.Mail", name: MailAnimationsDisable, value: true
+  
+  c.info "Unlock debug menu in Disk Utility."
+  c.default domain: "com.apple.DiskUtility", name: "DUDebugMenuEnabled", value: 1
 end
+
 
 # vim: set filetype=ruby :
