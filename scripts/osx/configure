@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+
+
+#def write_config(name, 
+
+#sudo nvram SystemAudioVolume=" " # Disable the sound effects on boot
+
+#$ _computer_name="julia"
+
+#$ sudo scutil --set ComputerName ${_computer_name}
+#$ sudo scutil --set HostName ${_computer_name}
+#$ sudo scutil --set LocalHostName ${_computer_name}
+#$ sudo defaults write /Library/Preferences/SystemConfiguration/com.apple.smb.server NetBIOSName -string ${_computer_name}
+
+
+# vim: set filetype=ruby :
