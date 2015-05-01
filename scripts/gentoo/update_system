@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
 
-# parse options {{{
+# {{{ Parse options.
 
 zparseopts -A _opts -without-sync
 
@@ -9,34 +9,36 @@ _with_sync=$([ -z "${(k)_opts[--without-sync]}" ] && echo 1 || echo 0)
 
 # }}}
 
-
 if [[ ${_with_sync} -ne 0 ]]; then
-  echo "<< repositories synchronization"
+  echo "<< Repositories synchronization."
   echo "Yes" | eix-sync -q
 fi
 
-echo "<< updates installation"
+echo "<< Updates installation."
 echo "Yes" | emerge --update --newuse --deep --with-bdeps=y @world @system
 
-echo "<< cleaning unused dependencies"
+echo "<< Cleaning unused dependencies."
 echo "Yes" | emerge --depclean
 
-echo "<< rebuilding reverse dependencies"
+echo "<< Rebuilding reverse dependencies."
 echo "Yes" | revdep-rebuild
 
 if [[ -x /usr/sbin/python-updater ]]; then
-  echo "<< updating python packages"
+  echo "<< Updating python packages."
   echo "Yes" | python-updater
 fi
 
 if [[ -x /usr/sbin/haskell-updater ]]; then
-  echo "<< updating haskell packages"
+  echo "<< Updating haskell packages."
   echo "Yes" | haskell-updater
 fi
 
 if [[ -x /usr/sbin/perl-cleaner ]]; then
-  echo "<< rebuilding perl packages"
+  echo "<< Rebuilding perl packages."
   perl-cleaner --all
 fi
 
-echo "<< system update finished"
+echo "<< System update finished."
+
+
+# vim: set filetype=zsh :
