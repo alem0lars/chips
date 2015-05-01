@@ -104,9 +104,6 @@ class CommandsExecutor # {{{
     type = type_from_value(value) if type.nil?
     name = [name] unless name.respond_to?(:each)
     domain = "NSGlobalDomain" if domain == :global
-    if domain =~ /^sysconfig:(.+)$/
-      domain = "/Library/Preferences/SystemConfiguration/#{$1}"
-    end
 
     name.each { |n| defaults_write(type, n, value, domain, msg) }
   end
@@ -192,76 +189,165 @@ PMPrintingExpandedStateForPrint = %w(
   PMPrintingExpandedStateForPrint2
 )
 
-DockAnimationsDuration = %w(
-  expose-animation-duration
-  autohide-time-modifier
-  autohide-delay
-  springboard-show-duration
-  springboard-hide-duration
-  springboard-page-duration
-)
-
-MailAnimationsDisable = %w(
-  DisableSendAnimations
-  DisableReplyAnimations
-)
-
 # }}}
 
 Main.run(dryrun: ARGV.include?("--dryrun")) do |c|
   
   hostname = c.ask "What's your hostname"
-  c.sysconfig msg: "Setting hostname to `#{hostname}`.",
-              name: %w(ComputerName HostName LocalHostName), value: hostname
-  c.default msg: "Setting Samba server name to `#{hostname}`.",
-            domain: "sysconfig:com.apple.smb.server", name: "NetBIOSName", value: hostname
+  
+  c.sysconfig msg: "Set hostname to `#{hostname}`.",
+              name: %w(ComputerName HostName LocalHostName), 
+              value: hostname
+              
+  c.default msg: "Set Samba server name to `#{hostname}`.",
+            domain: "/Library/Preferences/SystemConfiguration/com.apple.smb.server",
+            name: "NetBIOSName", 
+            value: hostname
 
-  c.default msg: "Expanding save panel by default.",
-            name: NSNavPanelExpandedStateForSaveMode, value: true
-  c.default msg: "Expanding print panel by default.",
-            name: PMPrintingExpandedStateForPrint, value: true
+  c.default msg: "Expand save panel by default.",
+            name: NSNavPanelExpandedStateForSaveMode, 
+            value: true
+            
+  c.default msg: "Expand print panel by default.",
+            name: PMPrintingExpandedStateForPrint, 
+            value: true
 
   c.default msg: "Automatically quit printer app once the print jobs complete.",
-            domain: "com.apple.print.PrintingPrefs", name: "Quit When Finished", value: true
+            domain: "com.apple.print.PrintingPrefs",
+            name: "Quit When Finished", 
+            value: true
 
-  c.default msg: "Disabling system-wide resume.",
-            domain: "com.apple.systempreferences", name: "NSQuitAlwaysKeepsWindows", value: false
+  c.default msg: "Disable system-wide resume.",
+            domain: "com.apple.systempreferences", 
+            name: "NSQuitAlwaysKeepsWindows", 
+            value: false
 
-  c.default msg: "Disabling the crash reporter.",
-            domain: "com.apple.CrashReporter", name: "DialogType", value: "none"
+  c.default msg: "Disable the crash reporter.",
+            domain: "com.apple.CrashReporter", 
+            name: "DialogType", 
+            value: "none"
 
-  c.default msg: "Setting Help Viewer windows to non-floating mode.",
-            domain: "com.apple.helpviewer", name: "DevMode", value: true
+  c.default msg: "Set Help Viewer windows to non-floating mode.",
+            domain: "com.apple.helpviewer", 
+            name: "DevMode", 
+            value: true
 
   c.syssetup msg: "Automatically restart if the computer freezes.",
-             name: "setrestartfreeze", value: "on"
+             name: "setrestartfreeze",
+             value: "on"
 
-  c.default msg: "Enabling keyboard repeating.",
+  c.default msg: "Enable keyboard repeating.",
             name: "ApplePressAndHoldEnabled", value: false
 
-  c.default msg: "Setting sidebar icon size to medium.",
-            name: "NSTableViewDefaultSizeMode", value: 1
+  c.default msg: "Set sidebar icon size to medium.",
+            name: "NSTableViewDefaultSizeMode",
+            value: 1
 
   c.default msg: "Always show scrollbars.",
-            name: "AppleShowScrollBars", value: "Always"
+            name: "AppleShowScrollBars", 
+            value: "Always"
 
   c.default msg: "Increase window resize speed.",
-            name: "NSWindowResizeTime", value: 0.001
+            name: "NSWindowResizeTime", 
+            value: 0.001
   
-  c.default msg: "Unlocking debug menu in Disk Utility.",
-            domain: "com.apple.DiskUtility", name: "DUDebugMenuEnabled", value: 1
+  c.default msg: "Unlock debug menu in Disk Utility.",
+            domain: "com.apple.DiskUtility", 
+            name: "DUDebugMenuEnabled", 
+            value: 1
 
-  c.default msg: "Disabling the warning when changing a file extension.",
-            domain: "com.apple.finder", name: "FXEnableExtensionChangeWarning", value: false
+  c.default msg: "Save to disk, rather than iCloud, by default.",
+            name: "NSDocumentSaveNewDocumentsToCloud", 
+            value: false
             
-  #c.default msg: "Disabling Spotlight indexing for any volume that gets mounted and has not yet been indexed before.",
-  #          domain: "/.Spotlight-V100/VolumeConfiguration", name: "Exclusions", value: %w(/Volumes)
-
-  c.default msg: "Setting default save target to disk, rather than iCloud.",
-            name: "NSDocumentSaveNewDocumentsToCloud", value: false
+  c.default msg: "Check for software updates daily, not just once per week.",
+            domain: "com.apple.SoftwareUpdate", 
+            name: "ScheduleFrequency", 
+            value: 1
+            
+  c.default msg: "Enable full keyboard access for all controls (enable Tab in modal dialogs, menu windows, etc.)",
+            name: "AppleKeyboardUIMode", 
+            value: 3
   
-  #c.default msg: "Revealing IP address, hostname, OS version, etc. when clicking the clock in the login window.",
-  #          domain: "/Library/Preferences/com.apple.loginwindow", name: "AdminHostInfo", value: "HostName"
+  c.default msg: "Disable smart quotes.", 
+            name: "NSAutomaticQuoteSubstitutionEnabled", 
+            value: false
+            
+  c.default msg: "Disable smart dashes.", 
+            name: "NSAutomaticDashSubstitutionEnabled", 
+            value: false
+  
+  c.default msg: "Disable auto-correct.", 
+            name: "NSAutomaticSpellingCorrectionEnabled", 
+            value: false
+  
+  c.default msg: "Set trackpad speed.", 
+            name: "com.apple.trackpad.scaling", 
+            value: 2
+            
+  c.default msg: "Set mouse speed.", 
+            name: "com.apple.mouse.scaling", 
+            value: 2.5
+  
+  c.default msg: "Enable subpixel font rendering on non-Apple LCDs",
+            name: "AppleFontSmoothing", 
+            value: 2
+  
+  c.default msg: "Enable HiDPI display modes.",
+            domain: "/Library/Preferences/com.apple.windowserver", 
+            name: "DisplayResolutionEnabled", 
+            value: true
+             
+  c.default msg: "Turn off keyboard illumination when computer is not used for 5 minutes.",
+            domain: "com.apple.BezelServices", 
+            name: "kDimTime", 
+            value: 300
+
+  c.default msg: "Avoid creation of .DS_Store files on network volumes.",
+            domain: "com.apple.desktopservices", 
+            name: "DSDontWriteNetworkStores", 
+            value: true
+
+  c.default msg: "Disable the warning when changing a file extension.",
+            domain: "com.apple.finder", 
+            name: "FXEnableExtensionChangeWarning", 
+            value: false
+             
+  c.default msg: "Show icons for hard drives, servers, and removable media on the desktop.",
+            domain: "com.apple.finder", 
+            name: "ShowExternalHardDrivesOnDesktop", 
+            value: true
+  
+  c.default msg: "Show status bar in Finder by default.",
+            domain: "com.apple.finder", 
+            name: "ShowStatusBar", 
+            value: true
+             
+  c.default msg: "Use column view in all Finder windows by default.",
+            domain: "com.apple.finder", 
+            name: "FXPreferredViewStyle", 
+            value: "Clmv"
+             
+  c.default msg: "Allow text selection in Quick Look/Preview in Finder by default.",
+            domain: "com.apple.finder", 
+            name: "QLEnableTextSelection", 
+            value: true
+  
+  c.default msg: "Require password after sleep or screen saver begins.",
+            domain: "com.apple.screensaver", 
+            name: "askForPassword", 
+            value: 1
+  
+  c.default msg: "Wait no time before asking password after sleep or screen saver.",
+            domain: "com.apple.screensaver", 
+            name: "askForPasswordDelay",
+            value: 0
+
+  c.default msg: "Set screenshot format to PNG.",
+            domain: "com.apple.screencapture", 
+            name: "type", 
+            value: "png"
+
 end
 
 
