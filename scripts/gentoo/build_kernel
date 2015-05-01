@@ -17,4 +17,3 @@ cp arch/x86_64/boot/bzImage ${img_dest}
 
 
 unset img_dest
-
