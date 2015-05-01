@@ -243,7 +243,7 @@ system_configuration = proc do |c|
             name:   "IncludeInternalDebugMenu",
             value:  true
  
-  c.default msg:    "Make Safari's search banners default to Contains instead of Starts With."
+  c.default msg:    "Make Safari's search banners default to Contains instead of Starts With.",
             domain: "com.apple.Safari",
             name:    "FindOnPageMatchesWordStartsOnly",
             value:   false
