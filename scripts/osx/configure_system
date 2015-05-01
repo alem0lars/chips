@@ -5,160 +5,160 @@
 
 module Utils # {{{
 
-	def info(prefix, msg = nil) # {{{
-		if msg.nil?
-			puts("#{prefix}")
-		else
-			puts("#{prefix} #{msg}")
-		end
-	end # }}}
-
-	def warning(msg, ask_continue: true) # {{{
-		puts("⚠ #{msg}")
-		exit(-1) if ask_continue && !quiz('continue')
-	end # }}}
-
-	def error(msg) # {{{
-		puts("☠ #{msg}")
-		exit(-1)
-	end # }}}
-
-	def ask(question, type: :string) # {{{
-		$stdout.write("#{question.strip}? ")
-		answer = $stdin.gets.chomp 
-		case type
-		when :bool
-			if answer =~ /y|ye|yes|yeah|ofc/i
-				true
-			elsif answer =~ /n|no|fuck|fuck\s+you|fuck\s+off/i
-				false
-			else
-				info "Answer misunderstood."
-				ask(question, type: type)
-			end
-		when :string
-			if answer.empty?
-				warning "Empty answer.", ask_continue: false
-				ask(question, type: type)
-			else
-				answer
-			end
-		else
-			error("Unhandled question type: `#{type}`.")
-		end
+  def info(prefix, msg = nil) # {{{
+    if msg.nil?
+      puts("#{prefix}")
+    else
+      puts("#{prefix} #{msg}")
+    end
   end # }}}
-	
-	def type_from_value(value) # {{{
-		if value.is_a?(TrueClass) || value.is_a?(FalseClass)
-			:bool
-		elsif value.is_a?(String)
-			:string
-		else
-			error("Don't know how to handle `#{value.class}`.")
-		end
-	end # }}}
-	
+
+  def warning(msg, ask_continue: true) # {{{
+    puts("⚠ #{msg}")
+    exit(-1) if ask_continue && !quiz('continue')
+  end # }}}
+
+  def error(msg) # {{{
+    puts("☠ #{msg}")
+    exit(-1)
+  end # }}}
+
+  def ask(question, type: :string) # {{{
+    $stdout.write("#{question.strip}? ")
+    answer = $stdin.gets.chomp 
+    case type
+    when :bool
+      if answer =~ /y|ye|yes|yeah|ofc/i
+        true
+      elsif answer =~ /n|no|fuck|fuck\s+you|fuck\s+off/i
+        false
+      else
+        info "Answer misunderstood."
+        ask(question, type: type)
+      end
+    when :string
+      if answer.empty?
+        warning "Empty answer.", ask_continue: false
+        ask(question, type: type)
+      else
+        answer
+      end
+    else
+      error("Unhandled question type: `#{type}`.")
+    end
+  end # }}}
+  
+  def type_from_value(value) # {{{
+    if value.is_a?(TrueClass) || value.is_a?(FalseClass)
+      :bool
+    elsif value.is_a?(String)
+      :string
+    else
+      error("Don't know how to handle `#{value.class}`.")
+    end
+  end # }}}
+  
 end # }}}
 
 class CommandsExecutor # {{{
-	
-	include Utils
-	
-	def initialize
-		@commands = []
-	end
+  
+  include Utils
+  
+  def initialize
+    @commands = []
+  end
 
-	# {{{ DSL.
-	
-	def syssetup(name: nil value: nil, question: nil)
-		error("Missing `name`.") if name.nil?
-		error("Missing `name` or `question`.") if value.nil? && question.nil?
-		
-		name = [name] unless name.respond_to?(:each)
-		value = ask(question) if question
+  # {{{ DSL.
+  
+  def syssetup(name: nil value: nil, question: nil)
+    error("Missing `name`.") if name.nil?
+    error("Missing `name` or `question`.") if value.nil? && question.nil?
+    
+    name = [name] unless name.respond_to?(:each)
+    value = ask(question) if question
 
-		name.each { |n| systemsetup(n, value) }
-	end
-	
-	def sysconfig(name: nil, value: nil, question: nil)
-		error("Missing `name`.") if name.nil?
-		error("Missing `name` or `question`.") if value.nil? && question.nil?
-		
-		name = [name] unless name.respond_to?(:each)
-		value = ask(question) if question
+    name.each { |n| systemsetup(n, value) }
+  end
+  
+  def sysconfig(name: nil, value: nil, question: nil)
+    error("Missing `name`.") if name.nil?
+    error("Missing `name` or `question`.") if value.nil? && question.nil?
+    
+    name = [name] unless name.respond_to?(:each)
+    value = ask(question) if question
 
-		name.each { |n| scutil_write(n, value) }
-	end
-	
-	def default(type: nil, name: nil, value: nil, question: nil, domain: :global)
-		error("Missing `name`.") if name.nil?
-		error("Missing `domain`.") if domain.nil?
-		error("Missing `name` or `question`.") if value.nil? && question.nil?
+    name.each { |n| scutil_write(n, value) }
+  end
+  
+  def default(type: nil, name: nil, value: nil, question: nil, domain: :global)
+    error("Missing `name`.") if name.nil?
+    error("Missing `domain`.") if domain.nil?
+    error("Missing `name` or `question`.") if value.nil? && question.nil?
 
-		if question
-			value = type.nil? ? ask(question) : ask(question, type: type) 
-		end
-		type = type_from_value(value) if type.nil?
-		name = [name] unless name.respond_to?(:each)
-		domain = "NSGlobalDomain" if domain == :global
-		if domain =~ /^sysconfig:(.+)$/
-			domain = "/Library/Preferences/SystemConfiguration/#{$1}"
-		end
+    if question
+      value = type.nil? ? ask(question) : ask(question, type: type) 
+    end
+    type = type_from_value(value) if type.nil?
+    name = [name] unless name.respond_to?(:each)
+    domain = "NSGlobalDomain" if domain == :global
+    if domain =~ /^sysconfig:(.+)$/
+      domain = "/Library/Preferences/SystemConfiguration/#{$1}"
+    end
 
-		name.each { |n| defaults_write(type, n, value, domain) }
-	end
-	
-	# }}}
-	
-	def execute_commands(dryrun)
+    name.each { |n| defaults_write(type, n, value, domain) }
+  end
+  
+  # }}}
+  
+  def execute_commands(dryrun)
     info("Commands are:")
-		@commands.each do |command|
-			if dryrun
-				info("->", command)
-			else
-				system(command)
-			end
-		end
-	end
+    @commands.each do |command|
+      if dryrun
+        info("->", command)
+      else
+        system(command)
+      end
+    end
+  end
 
-	private
-	
-	def systemsetup(name, value)
-		@commands << "sudo systemsetup -#{name} \"#{value}\""
-	end
-	
-	def scutil_write(name, value)
-		@commands << "sudo scutil --set \"#{name}\" \"#{value}\""
-	end
-	
-	def defaults_write(type, name, value, domain)
-		case type.to_s.to_sym
-		when :string then type = "string"
-		when :bool   then type = "bool"
-		else error("Unknown type `#{type}`.")
-		end
-		@commands << "defaults write \"#{domain}\" \"#{name}\" -#{type} \"#{value}\""
-	end
+  private
+  
+  def systemsetup(name, value)
+    @commands << "sudo systemsetup -#{name} \"#{value}\""
+  end
+  
+  def scutil_write(name, value)
+    @commands << "sudo scutil --set \"#{name}\" \"#{value}\""
+  end
+  
+  def defaults_write(type, name, value, domain)
+    case type.to_s.to_sym
+    when :string then type = "string"
+    when :bool   then type = "bool"
+    else error("Unknown type `#{type}`.")
+    end
+    @commands << "defaults write \"#{domain}\" \"#{name}\" -#{type} \"#{value}\""
+  end
 
 end # }}}
 
 class Main # {{{
-	
-	include Utils
-	
-	def initialize
-		@commands_executor = CommandsExecutor.new
-	end
+  
+  include Utils
+  
+  def initialize
+    @commands_executor = CommandsExecutor.new
+  end
 
-	def run(dryrun)
-		yield(@commands_executor)
-		@commands_executor.execute_commands(dryrun)
-	end
+  def run(dryrun)
+    yield(@commands_executor)
+    @commands_executor.execute_commands(dryrun)
+  end
 
-	def self.run(dryrun: false, &block)
-		new.run(dryrun, &block)
-	end
-	
+  def self.run(dryrun: false, &block)
+    new.run(dryrun, &block)
+  end
+  
 end # }}}
 
 # }}} ==========================================================================
@@ -178,18 +178,18 @@ PMPrintingExpandedStateForPrint = %w(
 # }}}
 
 Main.run(dryrun: ARGV.include?("--dryrun")) do |c|
-	
-	hostname = c.ask "What's your hostname"
-	c.info "Setting hostname to `#{hostname}`."
-	c.sysconfig name: %w(ComputerName HostName LocalHostName), value: hostname
-	c.default domain: "sysconfig:com.apple.smb.server", name: "NetBIOSName", value: hostname
+  
+  hostname = c.ask "What's your hostname"
+  c.info "Setting hostname to `#{hostname}`."
+  c.sysconfig name: %w(ComputerName HostName LocalHostName), value: hostname
+  c.default domain: "sysconfig:com.apple.smb.server", name: "NetBIOSName", value: hostname
 
-	c.info "Expanding panels by default."
-	c.default name: NSNavPanelExpandedStateForSaveMode, value: true
-	c.default name: PMPrintingExpandedStateForPrint, value: true
-	
-	c.info "Automatically quit printer app once the print jobs complete."
-	c.default domain: "com.apple.print.PrintingPrefs", name: "Quit When Finished", value: true
+  c.info "Expanding panels by default."
+  c.default name: NSNavPanelExpandedStateForSaveMode, value: true
+  c.default name: PMPrintingExpandedStateForPrint, value: true
+  
+  c.info "Automatically quit printer app once the print jobs complete."
+  c.default domain: "com.apple.print.PrintingPrefs", name: "Quit When Finished", value: true
 
   c.info "Disabling resume system-wide."
   c.default domain: "com.apple.systempreferences", name: "NSQuitAlwaysKeepsWindows", value: false
@@ -200,13 +200,13 @@ Main.run(dryrun: ARGV.include?("--dryrun")) do |c|
   c.info "Setting Help Viewer windows to non-floating mode."
   c.default domain: "com.apple.helpviewer", name: "DevMode", value: true
 
-	c.info "Automatically restart if the computer freezes."
-	c.syssetup name: "setrestartfreeze", value: "on"
+  c.info "Automatically restart if the computer freezes."
+  c.syssetup name: "setrestartfreeze", value: "on"
+    
+  c.info "Enabling keyboard repeating."
+  c.default name: "ApplePressAndHoldEnabled", value: false
 
-	c.info "Enabling keyboard repeating."
-	c.default name: "ApplePressAndHoldEnabled", value: false
-
-	# TODO: Remap Caps Lock to Control.
+  # TODO: Remap Caps Lock to Control.
 end
 
 # vim: set filetype=ruby :
