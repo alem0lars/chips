@@ -3,8 +3,7 @@
 
 autoload colors && colors
 
-
-# configuration {{{
+# {{{ Configuration.
 
 _script_name=$(basename "$0")
 _default_title="term_$(cat < /dev/urandom |tr -dc 'a-z0-9'|fold -w 8|head -n 1)"
@@ -17,8 +16,7 @@ fi
 
 # }}}
 
-
-# utilities {{{
+# {{{ Utilities.
 
 usage()
 {
@@ -39,8 +37,7 @@ usage()
 
 # }}}
 
-
-# parse options {{{
+# {{{ Parse options.
 
 zparseopts -A _opts -title: -cmd: -help -without-tmux
 
@@ -62,11 +59,11 @@ _with_tmux=$([ -z "${(k)_opts[--without-tmux]}" ] && echo 1 || echo 0)
 # }}}
 
 
-if [[ ${_with_help} -ne 0 ]]; then # show help {{{
+if [[ ${_with_help} -ne 0 ]]; then # {{{ Show help.
   usage
   exit 0
   # }}}
-else # entry point {{{
+else # {{{ Entry point.
   if [[ ${_with_title} -eq 0 ]]; then
     _title=${_default_title}
   fi
