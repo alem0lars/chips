@@ -73,27 +73,27 @@ class CommandsExecutor # {{{
 
   # {{{ DSL.
   
-  def syssetup(name: nil, value: nil, question: nil, msg: nil)
+  def syssetup(name: nil, value: nil, question: nil, msg: nil, as_root: false)
     error("Missing `name`.") if name.nil?
     error("Missing `name` or `question`.") if value.nil? && question.nil?
     
     name = [name] unless name.respond_to?(:each)
     value = ask(question) if question
 
-    name.each { |n| systemsetup(n, value, msg) }
+    name.each { |n| systemsetup(n, value, msg, as_root) }
   end
   
-  def sysconfig(msg: nil, name: nil, value: nil, question: nil)
+  def sysconfig(msg: nil, name: nil, value: nil, question: nil, as_root: false)
     error("Missing `name`.") if name.nil?
     error("Missing `name` or `question`.") if value.nil? && question.nil?
     
     name = [name] unless name.respond_to?(:each)
     value = ask(question) if question
 
-    name.each { |n| scutil_write(n, value, msg) }
+    name.each { |n| scutil_write(n, value, msg, as_root) }
   end
   
-  def default(msg: nil, domain: :global, name: nil, value: nil, question: nil, type: nil)
+  def default(msg: nil, domain: :global, name: nil, value: nil, question: nil, type: nil, as_root: false)
     error("Missing `name`.") if name.nil?
     error("Missing `domain`.") if domain.nil?
     error("Missing `name` or `question`.") if value.nil? && question.nil?
@@ -105,7 +105,7 @@ class CommandsExecutor # {{{
     name = [name] unless name.respond_to?(:each)
     domain = "NSGlobalDomain" if domain == :global
 
-    name.each { |n| defaults_write(type, n, value, domain, msg) }
+    name.each { |n| defaults_write(type, n, value, domain, msg, as_root) }
   end
   
   # }}}
@@ -117,6 +117,7 @@ class CommandsExecutor # {{{
       info("Executing commands..")
     end
     @commands.each do |command_info|
+      command_info[:cmd] = "sudo #{command_info[:cmd]}" if command_info[:as_root]
       info(command_info[:msg]) if command_info[:msg]
       if dryrun
         info("->", command_info[:cmd])
@@ -128,21 +129,23 @@ class CommandsExecutor # {{{
 
   private
   
-  def systemsetup(name, value, msg)
+  def systemsetup(name, value, msg, as_root)
     @commands << {
       msg: msg,
-      cmd: "sudo systemsetup -#{name} \"#{value}\""
+      cmd: "sudo systemsetup -#{name} \"#{value}\"",
+      as_root: as_root
     }
   end
   
-  def scutil_write(name, value, msg)
+  def scutil_write(name, value, msg, as_root)
     @commands << {
       msg: msg,
-      cmd: "sudo scutil --set \"#{name}\" \"#{value}\""
+      cmd: "sudo scutil --set \"#{name}\" \"#{value}\"",
+      as_root: as_root
     }
   end
   
-  def defaults_write(type, name, value, domain, msg)
+  def defaults_write(type, name, value, domain, msg, as_root)
     type = type.to_s.to_sym
     error("Unknown type `#{type}`.") unless %i(string bool int float array).include?(type)
     
@@ -150,7 +153,8 @@ class CommandsExecutor # {{{
       
     @commands << {
       msg: msg,
-      cmd: "defaults write \"#{domain}\" \"#{name}\" -#{type} #{value}"
+      cmd: "defaults write \"#{domain}\" \"#{name}\" -#{type} #{value}",
+      as_root: as_root
     }
   end
 
@@ -202,8 +206,15 @@ Main.run(dryrun: ARGV.include?("--dryrun")) do |c|
   c.default msg: "Set Samba server name to `#{hostname}`.",
             domain: "/Library/Preferences/SystemConfiguration/com.apple.smb.server",
             name: "NetBIOSName", 
-            value: hostname
+            value: hostname,
+            as_root: true
 
+  c.default msg: "Disable Spotlight indexing for any volume that gets mounted and has not yet been indexed before.",
+            domain: "/.Spotlight-V100/VolumeConfiguration",
+            name: "Exclusions", 
+            value: %w(/Volumes),
+            as_root: true
+            
   c.default msg: "Expand save panel by default.",
             name: NSNavPanelExpandedStateForSaveMode, 
             value: true
@@ -292,11 +303,6 @@ Main.run(dryrun: ARGV.include?("--dryrun")) do |c|
   c.default msg: "Enable subpixel font rendering on non-Apple LCDs",
             name: "AppleFontSmoothing", 
             value: 2
-  
-  c.default msg: "Enable HiDPI display modes.",
-            domain: "/Library/Preferences/com.apple.windowserver", 
-            name: "DisplayResolutionEnabled", 
-            value: true
              
   c.default msg: "Turn off keyboard illumination when computer is not used for 5 minutes.",
             domain: "com.apple.BezelServices", 
