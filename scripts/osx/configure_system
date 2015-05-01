@@ -314,6 +314,8 @@ system_configuration = proc do |c|
   c.mkdir msg: "Creating the user's temporary directory.",
           path: "${HOME}/tmp"
   
+  # }}}
+
 end
 
 
