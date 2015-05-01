@@ -45,6 +45,7 @@ module Utils # {{{
       end
     when :int   then Integer(answer)
     when :float then Float(answer)
+    when :array then answer.split(/\s*,\s*/)
     else
       error("Unhandled question type: `#{type}`.")
     end
@@ -55,6 +56,7 @@ module Utils # {{{
     elsif value.is_a?(String) then :string
     elsif value.is_a?(Integer) then :int
     elsif value.is_a?(Float) then :float
+    elsif value.is_a?(Array) then :array
     else error("Don't know how to handle `#{value.class}`.")
     end
   end # }}}
@@ -71,27 +73,27 @@ class CommandsExecutor # {{{
 
   # {{{ DSL.
   
-  def syssetup(name: nil, value: nil, question: nil)
+  def syssetup(name: nil, value: nil, question: nil, msg: nil)
     error("Missing `name`.") if name.nil?
     error("Missing `name` or `question`.") if value.nil? && question.nil?
     
     name = [name] unless name.respond_to?(:each)
     value = ask(question) if question
 
-    name.each { |n| systemsetup(n, value) }
+    name.each { |n| systemsetup(n, value, msg) }
   end
   
-  def sysconfig(name: nil, value: nil, question: nil)
+  def sysconfig(msg: nil, name: nil, value: nil, question: nil)
     error("Missing `name`.") if name.nil?
     error("Missing `name` or `question`.") if value.nil? && question.nil?
     
     name = [name] unless name.respond_to?(:each)
     value = ask(question) if question
 
-    name.each { |n| scutil_write(n, value) }
+    name.each { |n| scutil_write(n, value, msg) }
   end
   
-  def default(type: nil, name: nil, value: nil, question: nil, domain: :global)
+  def default(msg: nil, domain: :global, name: nil, value: nil, question: nil, type: nil)
     error("Missing `name`.") if name.nil?
     error("Missing `domain`.") if domain.nil?
     error("Missing `name` or `question`.") if value.nil? && question.nil?
@@ -106,41 +108,53 @@ class CommandsExecutor # {{{
       domain = "/Library/Preferences/SystemConfiguration/#{$1}"
     end
 
-    name.each { |n| defaults_write(type, n, value, domain) }
+    name.each { |n| defaults_write(type, n, value, domain, msg) }
   end
   
   # }}}
   
   def execute_commands(dryrun)
-    info("Commands are:")
-    @commands.each do |command|
+    if dryrun
+      info("Commands are:")
+    else
+      info("Executing commands..")
+    end
+    @commands.each do |command_info|
+      info(command_info[:msg]) if command_info[:msg]
       if dryrun
-        info("->", command)
+        info("->", command_info[:cmd])
       else
-        system(command)
+        system(command_info[:cmd])
       end
     end
   end
 
   private
   
-  def systemsetup(name, value)
-    @commands << "sudo systemsetup -#{name} \"#{value}\""
+  def systemsetup(name, value, msg)
+    @commands << {
+      msg: msg,
+      cmd: "sudo systemsetup -#{name} \"#{value}\""
+    }
   end
   
-  def scutil_write(name, value)
-    @commands << "sudo scutil --set \"#{name}\" \"#{value}\""
+  def scutil_write(name, value, msg)
+    @commands << {
+      msg: msg,
+      cmd: "sudo scutil --set \"#{name}\" \"#{value}\""
+    }
   end
   
-  def defaults_write(type, name, value, domain)
-    case type.to_s.to_sym
-    when :string then type = "string"
-    when :bool   then type = "bool"
-    when :int    then type = "int"
-    when :float  then type = "float"
-    else error("Unknown type `#{type}`.")
-    end
-    @commands << "defaults write \"#{domain}\" \"#{name}\" -#{type} \"#{value}\""
+  def defaults_write(type, name, value, domain, msg)
+    type = type.to_s.to_sym
+    error("Unknown type `#{type}`.") unless %i(string bool int float array).include?(type)
+    
+    value = type == :array ? value.map{ |v| "\"#{v}\"" }.join(" ") : "\"#{value}\""
+      
+    @commands << {
+      msg: msg,
+      cmd: "defaults write \"#{domain}\" \"#{name}\" -#{type} #{value}"
+    }
   end
 
 end # }}}
@@ -197,51 +211,57 @@ MailAnimationsDisable = %w(
 Main.run(dryrun: ARGV.include?("--dryrun")) do |c|
   
   hostname = c.ask "What's your hostname"
-  c.info "Setting hostname to `#{hostname}`."
-  c.sysconfig name: %w(ComputerName HostName LocalHostName), value: hostname
-  c.default domain: "sysconfig:com.apple.smb.server", name: "NetBIOSName", value: hostname
+  c.sysconfig msg: "Setting hostname to `#{hostname}`.",
+              name: %w(ComputerName HostName LocalHostName), value: hostname
+  c.default msg: "Setting Samba server name to `#{hostname}`.",
+            domain: "sysconfig:com.apple.smb.server", name: "NetBIOSName", value: hostname
 
-  c.info "Expanding panels by default."
-  c.default name: NSNavPanelExpandedStateForSaveMode, value: true
-  c.default name: PMPrintingExpandedStateForPrint, value: true
-  
-  c.info "Automatically quit printer app once the print jobs complete."
-  c.default domain: "com.apple.print.PrintingPrefs", name: "Quit When Finished", value: true
+  c.default msg: "Expanding save panel by default.",
+            name: NSNavPanelExpandedStateForSaveMode, value: true
+  c.default msg: "Expanding print panel by default.",
+            name: PMPrintingExpandedStateForPrint, value: true
 
-  c.info "Disabling system-wide resume."
-  c.default domain: "com.apple.systempreferences", name: "NSQuitAlwaysKeepsWindows", value: false
-  
-  c.info "Disabling the crash reporter."
-  c.default domain: "com.apple.CrashReporter", name: "DialogType", value: "none"
+  c.default msg: "Automatically quit printer app once the print jobs complete.",
+            domain: "com.apple.print.PrintingPrefs", name: "Quit When Finished", value: true
 
-  c.info "Setting Help Viewer windows to non-floating mode."
-  c.default domain: "com.apple.helpviewer", name: "DevMode", value: true
+  c.default msg: "Disabling system-wide resume.",
+            domain: "com.apple.systempreferences", name: "NSQuitAlwaysKeepsWindows", value: false
 
-  c.info "Automatically restart if the computer freezes."
-  c.syssetup name: "setrestartfreeze", value: "on"
-    
-  c.info "Enabling keyboard repeating."
-  c.default name: "ApplePressAndHoldEnabled", value: false
+  c.default msg: "Disabling the crash reporter.",
+            domain: "com.apple.CrashReporter", name: "DialogType", value: "none"
 
-  # TODO: Remap Caps Lock to Control.
+  c.default msg: "Setting Help Viewer windows to non-floating mode.",
+            domain: "com.apple.helpviewer", name: "DevMode", value: true
+
+  c.syssetup msg: "Automatically restart if the computer freezes.",
+             name: "setrestartfreeze", value: "on"
+
+  c.default msg: "Enabling keyboard repeating.",
+            name: "ApplePressAndHoldEnabled", value: false
+
+  c.default msg: "Setting sidebar icon size to medium.",
+            name: "NSTableViewDefaultSizeMode", value: 1
+
+  c.default msg: "Always show scrollbars.",
+            name: "AppleShowScrollBars", value: "Always"
+
+  c.default msg: "Increase window resize speed.",
+            name: "NSWindowResizeTime", value: 0.001
   
-  c.info "Setting sidebar icon size to medium."
-  c.default name: "NSTableViewDefaultSizeMode", value: 1
+  c.default msg: "Unlocking debug menu in Disk Utility.",
+            domain: "com.apple.DiskUtility", name: "DUDebugMenuEnabled", value: 1
+
+  c.default msg: "Disabling the warning when changing a file extension.",
+            domain: "com.apple.finder", name: "FXEnableExtensionChangeWarning", value: false
+            
+  c.default msg: "Disabling Spotlight indexing for any volume that gets mounted and has not yet been indexed before.",
+            domain: "/.Spotlight-V100/VolumeConfiguration", name: "Exclusions", value: %w(/Volumes)
+
+  c.default msg: "Setting default save target to disk, rather than iCloud.",
+            name: "NSDocumentSaveNewDocumentsToCloud", value: false
   
-  c.info "Always show scrollbars."
-  c.default name: "AppleShowScrollBars", value: "Always"
-  
-  c.info "Increase window resize speed."
-  c.default name: "NSWindowResizeTime", value: 0.001
-  
-  #c.info "Disable animations."
-  #c.default name: NSAutomaticWindowAnimationsEnabled, value: false
-  #c.default domain: "com.apple.finder", name: "DisableAllAnimations", value: true
-  #c.default domain: "com.apple.dock", name: DockAnimationsDuration, value: 0.0
-  #c.default domain: "com.apple.Mail", name: MailAnimationsDisable, value: true
-  
-  c.info "Unlock debug menu in Disk Utility."
-  c.default domain: "com.apple.DiskUtility", name: "DUDebugMenuEnabled", value: 1
+  c.default msg: "Reveal IP address, hostname, OS version, etc. when clicking the clock in the login window.",
+            domain: "/Library/Preferences/com.apple.loginwindow", name: "AdminHostInfo", value: "HostName"
 end
 
 
