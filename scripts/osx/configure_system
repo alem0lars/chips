@@ -254,14 +254,14 @@ Main.run(dryrun: ARGV.include?("--dryrun")) do |c|
   c.default msg: "Disabling the warning when changing a file extension.",
             domain: "com.apple.finder", name: "FXEnableExtensionChangeWarning", value: false
             
-  c.default msg: "Disabling Spotlight indexing for any volume that gets mounted and has not yet been indexed before.",
-            domain: "/.Spotlight-V100/VolumeConfiguration", name: "Exclusions", value: %w(/Volumes)
+  #c.default msg: "Disabling Spotlight indexing for any volume that gets mounted and has not yet been indexed before.",
+  #          domain: "/.Spotlight-V100/VolumeConfiguration", name: "Exclusions", value: %w(/Volumes)
 
   c.default msg: "Setting default save target to disk, rather than iCloud.",
             name: "NSDocumentSaveNewDocumentsToCloud", value: false
   
-  c.default msg: "Reveal IP address, hostname, OS version, etc. when clicking the clock in the login window.",
-            domain: "/Library/Preferences/com.apple.loginwindow", name: "AdminHostInfo", value: "HostName"
+  #c.default msg: "Revealing IP address, hostname, OS version, etc. when clicking the clock in the login window.",
+  #          domain: "/Library/Preferences/com.apple.loginwindow", name: "AdminHostInfo", value: "HostName"
 end
 
 
