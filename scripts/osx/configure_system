@@ -78,7 +78,8 @@ system_configuration = proc do |c|
              value: "on"
 
   c.default msg:  "Enable keyboard repeating.",
-            name: "ApplePressAndHoldEnabled", value: false
+            name: "ApplePressAndHoldEnabled",
+            value: false
 
   c.default msg:   "Set sidebar icon size to medium.",
             name:  "NSTableViewDefaultSizeMode",
@@ -124,7 +125,7 @@ system_configuration = proc do |c|
   
   c.default msg:   "Set trackpad speed.", 
             name:  "com.apple.trackpad.scaling", 
-            value: 2
+            value: 1
             
   c.default msg:   "Set mouse speed.", 
             name:  "com.apple.mouse.scaling", 
@@ -310,6 +311,97 @@ system_configuration = proc do |c|
             domain: "com.apple.screencapture", 
             name: "type", 
             value: "png"
+
+  # }}}
+  
+  # {{{ Apple Trackpad.
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "Clicking",
+            value:  1
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "DragLock",
+            value:  0
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "Dragging",
+            value:  0
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadCornerSecondaryClick",
+            value:  0
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadFiveFingerPinchGesture",
+            value:  2
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadFourFingerHorizSwipeGesture",
+            value:  2
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadFourFingerPinchGesture",
+            value:  2
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadFourFingerVertSwipeGesture",
+            value:  2
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadHandResting",
+            value:  1
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadHorizScroll",
+            value:  1
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadMomentumScroll",
+            value:  1
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadPinch",
+            value:  1
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadRightClick",
+            value:  1
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadRotate",
+            value:  1
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadScroll",
+            value:  1
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadThreeFingerDrag",
+            value:  0
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadThreeFingerHorizSwipeGesture",
+            value:  2
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadThreeFingerTapGesture",
+            value:  2
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadThreeFingerVertSwipeGesture",
+            value:  2
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadTwoFingerDoubleTapGesture",
+            value:  1
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "TrackpadTwoFingerFromRightEdgeSwipeGesture",
+            value:  3
+
+  c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+            name:   "USBMouseStopsTrackpad",
+            value:  0
 
   # }}}
   
