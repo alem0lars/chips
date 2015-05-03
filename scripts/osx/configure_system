@@ -409,10 +409,10 @@ system_configuration = proc do |c|
   # {{{ Create basic directories.
   
   c.mkdir msg: "Creating the user's temporary directory.",
-          path: "${HOME}/tmp"
+          path: "${HOME}/Tmp"
   
   c.mkdir msg: "Creating the user's development directory.",
-          path: "${HOME}/development"
+          path: "${HOME}/Development"
           
   # }}}
 
