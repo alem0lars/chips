@@ -315,6 +315,7 @@ system_configuration = proc do |c|
   # }}}
   
   # {{{ Apple Trackpad.
+
   c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
             name:   "Clicking",
             value:  1
