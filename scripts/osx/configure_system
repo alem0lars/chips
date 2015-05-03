@@ -65,11 +65,9 @@ system_configuration = proc do |c|
             value:  "none"
             
   c.default msg:     "Enable dark mode.",
-            domain:  "/Library/Preferences/.GlobalPreferences",
             name:    "AppleInterfaceTheme",
-            value:   "Dark",
-            as_root: true
-            
+            value:   "Dark"
+
   c.default msg:    "Set Help Viewer windows to non-floating mode.",
             domain: "com.apple.helpviewer", 
             name:   "DevMode", 
