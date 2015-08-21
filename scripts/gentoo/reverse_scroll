@@ -4,6 +4,7 @@
 _pointers_ids=($(                      \
     xinput list                        \
   | grep -E "slave.*pointer"           \
+  | grep -vi "bcm5974"                 \
   | grep -vi xtest                     \
   | grep -vi keyboard                  \
   | sed -e 's/^.*id=//' -e 's/\s.*$//' \
