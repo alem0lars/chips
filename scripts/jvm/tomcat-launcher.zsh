@@ -94,12 +94,12 @@ stop()
 {
   echo "Stopping ${_inst_name}"
 
-  sudo sh -s "$@" <<'EOF'
+  sudo -E sh -s "$@" <<'EOF'
   ${JAVA_HOME}/bin/java \
    ${JAVA_OPTS} \
    -classpath "${CLASSPATH}" \
    ${CATALINA_OPTS} \
-   stop ${STD_OUT}
+   stop
 EOF
 }
 
