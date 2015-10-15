@@ -1,0 +1,181 @@
+#!/usr/bin/env ruby
+
+# {{{ Requires.
+
+require 'json'
+require 'open3'
+require 'readline'
+require 'mkmf'
+
+# }}}
+
+# {{{ Check for external programs.
+
+%w(xrandr).each do |program|
+  error("Cannot find the program '#{program}'") unless find_executable(program)
+end
+
+# }}}
+
+# {{{ Configuration.
+
+SETUP_NAME_ENVVAR = 'MM_SETUP_NAME'
+SETUPS_INFO_ENVVAR = 'MM_SETUPS_INFO'
+CONFIG_NAME = 'multimonitor.json'
+
+ALLOWED_ROLES = %i(internal external)
+
+DEF_SETUP_INFO = {
+  eDP1: { role: :internal }
+}
+
+# }}}
+
+# {{{ Core class extensions.
+
+class String
+  def indent(prefix: "\t")
+    empty? ? self : prefix + self.split("\n").join("\n#{prefix}")
+  end
+end
+
+class Hash
+  def self.symbolize(value, values_to_sym: false)
+    if value.is_a?(Hash)
+      value.inject({}) do |memo, (k, v)|
+        memo[k.to_sym] = Hash.symbolize(v, values_to_sym: values_to_sym)
+        memo
+      end
+    elsif values_to_sym && value.respond_to?(:to_sym)
+      value.to_sym
+    else
+      value
+    end
+  end
+
+  def symbolize(values_to_sym: false)
+    Hash.symbolize(self, values_to_sym: values_to_sym)
+  end
+end
+
+# }}}
+
+# {{{ Library.
+
+def ask(prompt: '> ', cwords: [], match: nil)
+  res = nil
+  if cwords
+    cwords.collect!(&:to_s)
+    Readline.completion_append_character = ' '
+    Readline.completer_word_break_characters = "\n" # pass full string in proc
+    Readline.completion_proc = proc do |s|
+      if s.empty? || !s.split(' ').find { |elem| cwords.include?(elem) }
+        cwords.grep(/^#{Regexp.escape(s)}/)
+      else
+        []
+      end
+    end
+  end
+  loop do
+    input = Readline.readline('> ', true)
+    input.strip! unless input.nil?
+    case match
+    when nil then res = input
+    when :cwords then res = input if cwords.include?(input)
+    when Proc then res = match.call(input)
+    end
+    break unless res.nil?
+  end
+  res
+end
+
+def parse_setups_info
+  setups_info = { default: DEF_SETUP_INFO }
+  setups_info.merge!(
+    [File.join('/etc', CONFIG_NAME),
+     File.join(ENV['HOME'], '.config', CONFIG_NAME)
+    ].each_with_object({}) do |config, hash|
+      begin
+        hash.merge!(JSON.parse(File.read(config))) if File.readable?(config)
+      rescue JSON::ParserError => err
+        warn("Skipping invalid configuration at '#{config}': \n" +
+             err.message.indent)
+      end
+    end
+  )
+  if ENV.has_key?(SETUPS_INFO_ENVVAR)
+    begin
+      setups_info.merge!(JSON.parse(ENV[SETUPS_INFO_ENVVAR]))
+    rescue JSON::ParserError => err
+      warn('Skipping invalid conifguration in the environment variable ' \
+           "'#{SETUPS_INFO_ENVVAR}': \n#{err.message.indent}")
+    end
+  end
+  setups_info.symbolize(values_to_sym: true)
+end
+
+def warn(msg)
+  puts "Warning: #{msg}"
+end
+
+def error(msg)
+  puts "Error: #{msg}"
+  exit(-1)
+end
+
+def monitors_by_role(setup_info, role)
+  roles = role.respond_to?(:include?) ? role : [role]
+  setup_info.find_all { |_, info| roles.include?(info[:role]) }
+end
+
+def xrandr(output, *args, warn: true)
+  output = output.to_s
+  args.collect!(&:to_s)
+  status = nil
+  command = ['xrandr', '--output', output, *args]
+  Open3.popen3(*command) do |_, stdout, stderr, thr|
+    status = thr.value.success?
+    out = stdout.readlines
+    err = stderr.readlines
+    if warn && !status
+      msg = "Command #{command.join(' ')} failed:"
+      msg << "\n\t#{err.join("\t\n")}" unless err.empty?
+      warn(msg)
+    end
+    yield(status, out, err) if block_given?
+  end
+  return status
+end
+
+# }}}
+
+# Entry point.
+def main(args, env)
+  setups_info = parse_setups_info
+  # 1. Find setup name.
+  setup_name = (args.first || env[SETUP_NAME_ENVVAR] ||
+                ask(cwords: setups_info.keys, match: :cwords)
+               ).to_sym
+  unless setups_info.include?(setup_name)
+    error("Invalid setup name: #{setup_name}")
+  end
+  setup_info = setups_info[setup_name]
+  # 2. Validate setup info.
+  unless monitors_by_role(setup_info, ALLOWED_ROLES)
+    error('Invalid role detected')
+  end
+  unless monitors_by_role(setup_info, :internal).length == 1
+    error('Exactly one internal monitor is needed')
+  end
+  # 3. Perform monitors setup.
+  internal_monitor_name, _ = monitors_by_role(setup_info, :internal).first
+  monitors_by_role(setup_info, :external)
+    .each { |n, _| xrandr(n, '--off') }
+  monitors_by_role(setup_info, :external)
+    .each { |n, _| xrandr(n, '--auto') }
+  monitors_by_role(setup_info, :external)
+    .select { |_, i| i[:position] }
+    .each { |n, i| xrandr(n, "--#{i[:position]}-of", internal_monitor_name) }
+end
+
+main(ARGV, ENV)
