@@ -1,0 +1,102 @@
+#!/usr/bin/env ruby
+
+
+require "pathname"
+require "fileutils"
+require "shellwords"
+
+
+# ──────────────────────────────────────────────────────────── Configuration ──┐
+ROOT_DIR    = Pathname.new(__FILE__).expand_path.dirname
+SCRIPTS_DIR = ROOT_DIR.join("scripts")
+DEST_DIR    = Pathname.new("/usr/local/bin")
+# ─────────────────────────────────────────────────────────────────────────────┘
+
+# ─────────────────────────────────────────────────────────────────────── IO ──┐
+def info(prefix, msg=nil)
+  tell "#{prefix} #{msg}"
+end
+
+def warning(msg, ask_continue: true)
+  tell "☞ #{msg}"
+  exit(-1) if ask_continue && !ask("continue")
+end
+
+def error(msg, status: -1)
+  error "Invalid status code `#{status}`: not negative" if status >= 0
+  tell "☠ #{msg}"
+  exit status
+end
+
+def tell(*args)
+  puts(*args)
+end
+
+def ask(question, type: :string)
+  question.gsub!(/[?]*/, "")
+  question.strip!
+  question << "? "
+
+  $stdout.write "> #{question}"
+  answer = gets.chomp
+
+  case type
+    when :bool
+      if answer =~ /(y|ye|yes|yeah|ofc)$/i
+        true
+      elsif answer =~ /(n|no|fuck|fuck\s+you|fuck\s+off)$/i
+        false
+      else
+        warning "Answer misunderstood", ask_continue: false
+        ask question, type: type
+      end
+    when :string
+      if answer.empty?
+        warning "Empty answer", ask_continue: false
+        ask question, type: type
+      else
+        answer
+      end
+    else error "Unhandled question type: `#{type}`."
+  end
+end
+# ─────────────────────────────────────────────────────────────────────────────┘
+
+# ──────────────────────────────────────────────────────────────────── Utils ──┐
+def copy_chips(category, simulate: true)
+  Pathname.glob(SCRIPTS_DIR.join(category.to_s).join("*")) do |chip_src_path|
+    chip_dst_path = DEST_DIR.join(chip_src_path.basename)
+    cmd = [
+      "sudo",
+      "cp",
+      Shellwords.escape(chip_src_path),
+      Shellwords.escape(chip_dst_path)
+    ].join(" ")
+    if simulate
+      puts(cmd)
+    else
+      system(cmd)
+    end
+  end
+end
+# ─────────────────────────────────────────────────────────────────────────────┘
+
+# ────────────────────────────────────────────────────────────── Entry Point ──┐
+def main
+  simulate = ask "simulate setup", type: :bool
+
+  categories = Pathname.glob(SCRIPTS_DIR.join("*")).map do |category_path|
+    category_path.basename.to_s
+  end
+
+  categories.each do |category|
+    if ask "include #{category}", type: :bool
+      copy_chips category, simulate: simulate
+    end
+  end
+end
+main
+# ─────────────────────────────────────────────────────────────────────────────┘
+
+
+# vim: set filetype=ruby :
