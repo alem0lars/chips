@@ -20,8 +20,7 @@ fi
 
 # {{{ Prompt for login.
 
-wmctrl -s ${(v)_workspaces[tmp]}
-openterm --title "lpass login" --cmd "lpass login ${_user_email}"
+lpass login "${_user_email}"
 lpass sync
 if [[ $? -eq 0 ]]; then
   _logged_in=1
@@ -31,46 +30,37 @@ fi
 
 # }}}
 
+# {{{ SSH key
+
+if [[ -f "${HOME}/.ssh/id_rsa" ]]; then
+  ssh-add "${HOME}/.ssh/id_rsa"
+fi
+
+# }}}
+
 if [[ ${_logged_in} -ne 0 ]]; then
-
-  # Initial workspace.
-  wmctrl -s ${(v)_workspaces[${_initial_workspace_name}]}
-
   # {{{ Open `social` software.
 
   openterm --title "mutt" --cmd "mutt" &
   openterm --title "weechat" --cmd "weechat" &
   openterm --title "turses" --cmd "turses" &
-  sleep 1
-  wmctrl -r "mutt" -t ${(v)_workspaces[social]}
-  wmctrl -r "weechat" -t ${(v)_workspaces[social]}
-  wmctrl -r "turses" -t ${(v)_workspaces[social]}
 
   # }}}
 
   # {{{ Open `org` software.
 
   openterm --title "taskwarrior" --cmd "task list" &
-  sleep 1
-  wmctrl -r "taskwarrior" -t ${(v)_workspaces[org]}
-
-  # }}}
-
-  # {{{ Open `wflow` software.
-
-  openterm --title "vim" --cmd "vim" &
-  sleep 1
-  wmctrl -r "vim" -t ${(v)_workspaces[wflow_0]}
 
   # }}}
 
   # {{{ Open `ref` software.
 
-  firefox &
-  sleep 1
-  wmctrl -r "firefox" -t ${(v)_workspaces[ref]}
+  chromium-browser &
+#  firefox &
 
   # }}}
+
+  openterm --title "anapnea" --cmd "ssh alem0lars@anapnea.net" &
 fi
 
 

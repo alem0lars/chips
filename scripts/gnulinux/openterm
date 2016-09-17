@@ -28,7 +28,7 @@ usage()
     "[${fg[green]}--without-tmux${reset_color}]\n" \
     "where:\n" \
     "\t${fg[red]}TITLE${reset_color}: ${fg[yellow]}the terminal " \
-      "title${reset_color}" \
+      "title and tmux session name${reset_color}" \
       "(default: ${fg[yellow]}${_default_title}${reset_color})\n" \
     "\t${fg[red]}CMD${reset_color}: " \
       "${fg[yellow]}the command to be executed${reset_color}" \
@@ -72,14 +72,15 @@ else # {{{ Entry point.
     if [[ ${_with_tmux} -eq 0 ]]; then
       TMUX="" ${_urxvt_cmd} -title "${_title}" -e zsh -i
     else
-      TMUX="" ${_urxvt_cmd} -title "${_title}" -e zsh -i -c "tmux new-session"
+      TMUX="" ${_urxvt_cmd} -title "${_title}" -e zsh -i -c \
+        "tmux new-session -s ${(qq)_title}"
     fi
   else
     if [[ ${_with_tmux} -eq 0 ]]; then
       TMUX="" ${_urxvt_cmd} -title "${_title}" -e zsh -i -c "${_cmd}"
     else
       TMUX="" ${_urxvt_cmd} -title "${_title}" -e zsh -i -c \
-        "tmux new-session \"${_cmd}\""
+        "tmux new-session -s ${(qq)_title} ${(qq)_cmd}"
     fi
   fi
 fi # }}}
