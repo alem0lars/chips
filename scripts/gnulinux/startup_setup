@@ -1,67 +1,91 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env ruby
+
+require "fileutils"
+require "etc"
+require "syslog/logger"
+require "io/console"
+require "shellwords"
 
 
-# {{{ Configuration.
-
-typeset -A _workspaces
-_workspaces=(
-  ref 0 wflow_0 1 wflow_1 2 wflow_supp_0 3 wflow_supp_1 4 org 5
-  social 6 mgmt 7 tmp 8
-)
-_initial_workspace_name="ref"
-
-_user_email=`git config --get user.email`
-if [[ -z "${_user_email}" ]]; then
-  notify-send "skipping startup" "invalid git user.email configuration"
-  exit -1
-fi
-
-# }}}
-
-# {{{ Prompt for login.
-
-lpass login "${_user_email}"
-lpass sync
-if [[ $? -eq 0 ]]; then
-  _logged_in=1
-else
-  _logged_in=0
-fi
-
-# }}}
-
-# {{{ SSH key
-
-if [[ -f "${HOME}/.ssh/id_rsa" ]]; then
-  ssh-add "${HOME}/.ssh/id_rsa"
-fi
-
-# }}}
-
-if [[ ${_logged_in} -ne 0 ]]; then
-  # {{{ Open `social` software.
-
-  openterm --title "mutt" --cmd "mutt" &
-  openterm --title "weechat" --cmd "weechat" &
-  openterm --title "turses" --cmd "turses" &
-
-  # }}}
-
-  # {{{ Open `org` software.
-
-  openterm --title "taskwarrior" --cmd "task list" &
-
-  # }}}
-
-  # {{{ Open `ref` software.
-
-  chromium-browser &
-#  firefox &
-
-  # }}}
-
-  openterm --title "anapnea" --cmd "ssh alem0lars@anapnea.net" &
-fi
+# TODO: get from fizzy
+network_manager = true
+user_email  = "alessandro.molari@yoroi.company"
+web_browser = "chromium-browser"
+clipboard   = "copyq"
+keyb_layout = "us"
+ssh_key     = "~/.ssh/id_rsa"
 
 
-# vim: set filetype=zsh :
+$log = Syslog::Logger.new(File.basename(__FILE__))
+$root_pwd = nil
+$simulate = ENV["SS_SIMULATE"]
+
+
+def run(cmd, root: false, detached: true)
+  if root
+    if $root_pwd.nil?
+      print "Insert root password: "
+      $root_pwd = STDIN.noecho(&:gets).chomp
+    end
+    cmd = "echo #{Shellwords.escape($root_pwd)} | sudo -S #{cmd}"
+  end
+  cmd += " &" if detached
+
+  $log.info "Running `#{cmd}`#{root ? " as `root`" : ""}"
+  if $simulate
+    puts cmd
+  else
+    system cmd
+  end
+end
+
+def openterm(cmd, title=nil)
+  title ||= cmd
+  run ["openterm ",
+       "--title #{Shellwords.escape(title)}",
+       "--cmd   #{Shellwords.escape(cmd)}"
+      ].join(" "),
+      detached: true
+end
+
+
+FileUtils.cd("/tmp") do
+  $log.info "Starting `startup_setup`"
+
+  run "setxkbmap -option setxkbmap #{keyb_layout}", detached: false
+  run "setxkbmap -option ctrl:nocaps", detached: false
+
+  run "lpass logout", detached: false
+  run "lpass login #{user_email}", detached: false
+  run "lpass sync", detached: false
+
+  run "ssh-add #{ssh_key}", detached: false if File.file?(ssh_key)
+
+  run "redshift -l 44.144776:12.249972 -t 6000:4000", root: true
+
+  run "unclutter -root"
+  run "start-pulseaudio-x11"
+  run "urxvtd"
+
+  run "nm-applet" if network_manager
+
+  run clipboard
+
+  run web_browser
+  run "zeal"
+
+  openterm "weechat"
+  openterm "slack --disable-gpu" # TODO: Remove slack
+  # openterm "mutt" TODO: uncomment when mutt is added
+  # openterm "turses" TODO: uncomment when turses is added
+
+  openterm "toggl"
+  openterm "taskwarrior", "task sync && task list"
+
+  openterm "ssh-anapnea", "ssh alem0lars@anapnea.net"
+
+  openterm "sysmon", "tmuxp load sysmon"
+end
+
+
+# vim: set filetype=ruby :
