@@ -1,15 +1,12 @@
 #!/usr/bin/env ruby
 
-# {{{ requires
 
-require 'fileutils'
+require "shellwords"
+require "fileutils"
 
-# }}}
-
-# {{{ library
 
 def error(msg)
-  puts "error: #{msg}"
+  puts "Error: #{msg}"
   exit(-1)
 end
 
@@ -20,14 +17,14 @@ end
 
 def set_facl(path, perm,
              subject: nil, name: nil, recursive: true, dryrun: false)
-  subject = 'u' if subject == :owner
-  subject = 'g' if subject == :group
-  subject = 'o' if subject == :other
-  error("invalid subject: #{subject}") unless %w(u g o).include?(subject)
+  subject = "u" if subject == :owner
+  subject = "g" if subject == :group
+  subject = "o" if subject == :other
+  error("Invalid subject: #{subject}") unless %w(u g o).include?(subject)
 
   spec = "#{subject}:#{name ? name : ''}:#{perm}"
 
-  run_cmd("setfacl -d #{recursive ? '-R' : ''} -m '#{spec}' '#{path}'",
+  run_cmd("setfacl -d #{recursive ? "-R" : ""} -m #{Shellwords.escape(spec)} #{Shellwords.escape(path)}",
           dryrun: dryrun)
 end
 
@@ -57,41 +54,41 @@ def setup_dir(path, owner: nil, group: nil, perms: {}, dryrun: false)
            subject: :other, dryrun: dryrun) if perms[:other]
 end
 
-def gpasswd(user, group, dryrun: dryrun)
-  run_cmd("gpasswd -a '#{user}' '#{group}'", dryrun: dryrun)
+def gpasswd(user, group, dryrun: false)
+  run_cmd("gpasswd -a #{Shellwords.escape(user)} #{Shellwords.escape(group)}", dryrun: dryrun)
 end
 
-def group_add(group, dryrun: dryrun)
-  run_cmd("groupadd '#{group}'", dryrun: dryrun)
+def group_add(group, dryrun: false)
+  run_cmd("groupadd #{Shellwords.escape(group)}", dryrun: dryrun)
 end
 
-# }}}
 
-# entry point
+# Entry point
 def main(args, dryrun: false)
   args.each do |info|
     allow = info.delete(:allow)
     group_add(info[:group]) if info[:group]
     setup_dir(info.delete(:path), info.merge(dryrun: dryrun))
     if allow
-      error("can't allow: #{allow}") unless info[:group]
+      error("Can't allow: #{allow}") unless info[:group]
       allow.each { |user| gpasswd(user, info[:group], dryrun: dryrun) }
     end
   end
 end
 
-main([
-  { path: '/vm/virtualbox',  group: 'vm'              },
-  { path: '/data/backup',    group: 'data-backup'     },
-  { path: '/data/tmp',       group: 'data-tmp'        },
-  { path: '/data/documents', group: 'data-documents'  },
-  { path: '/data/graphics',  group: 'data-graphics'   },
-  { path: '/data/audio',     group: 'data-audio'      },
-  { path: '/data/video',     group: 'data-video'      },
-  { path: '/data/develop',   group: 'data-develop'    },
-  { path: '/data/downloads', group: 'data-downloads'  }
-].map { |h| {
-  owner: :root,
-  perms: '770',
-  allow: %i(alem0lars)
-}.merge(h) })
+main [
+  { path: "/vm/virtualbox",  group: "vm"             },
+  { path: "/data/backup",    group: "data-backup"    },
+  { path: "/data/tmp",       group: "data-tmp"       },
+  { path: "/data/documents", group: "data-documents" },
+  { path: "/data/graphics",  group: "data-graphics"  },
+  { path: "/data/audio",     group: "data-audio"     },
+  { path: "/data/video",     group: "data-video"     },
+  { path: "/data/develop",   group: "data-develop"   },
+  { path: "/data/downloads", group: "data-downloads" }
+].map do |h|
+  { owner: :root,
+    perms: "770",
+    allow: %i(alem0lars)
+  }.merge(h)
+end
