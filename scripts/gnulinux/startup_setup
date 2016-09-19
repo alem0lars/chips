@@ -40,12 +40,13 @@ def run(cmd, root: false, detached: true)
 end
 
 def openterm(cmd, title=nil)
-  title ||= cmd
-  run ["openterm ",
-       "--title #{Shellwords.escape(title)}",
-       "--cmd   #{Shellwords.escape(cmd)}"
-      ].join(" "),
-      detached: true
+  title = cmd if title.nil?
+
+  args  = ["openterm"]
+  args << "--title #{Shellwords.escape(title)}" if title
+  args << "--cmd   #{Shellwords.escape(cmd)}" if cmd
+
+  run args.join(" "), detached: true
 end
 
 
@@ -75,16 +76,17 @@ FileUtils.cd("/tmp") do
   run "zeal"
 
   openterm "weechat"
-  openterm "slack --disable-gpu" # TODO: Remove slack
+  run "slack --disable-gpu" # TODO: Remove slack
+  run "thunderbird" # TODO: Remove thunderbird
   # openterm "mutt" TODO: uncomment when mutt is added
   # openterm "turses" TODO: uncomment when turses is added
 
-  openterm "toggl"
+  run "toggl"
   openterm "taskwarrior", "task sync && task list"
 
-  openterm "ssh-anapnea", "ssh alem0lars@anapnea.net"
+  openterm "anapnea", "ssh alem0lars@anapnea.net"
 
-  openterm "sysmon", "tmuxp load sysmon"
+  openterm "tmuxp load sysmon", false
 end
 
 
