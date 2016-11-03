@@ -1,19 +1,17 @@
-#!/bin/sh
+#!/usr/bin/env zsh
 
 
-img_dest="/boot/kernel-gentoo"
-
-
-cd /usr/src/linux
-
-echo ">> Compiling."
+echo ">> Compiling.."
 make
 
-echo ">> Installing modules"
+echo ">> Installing kernel modules.."
 make modules_install
 
-echo ">> Copying the kernel image to ${img_dest}"
-cp arch/x86_64/boot/bzImage ${img_dest}
+echo ">> Installing the kernel image.."
+make install
+
+echo ">> Creating the initramfs.."
+dracut --force initrd-`uname -r`
 
 
-unset img_dest
+# vim: set filetype=zsh :
