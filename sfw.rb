@@ -1,8 +1,12 @@
 require "shellwords"
 require "pathname"
 require "fileutils"
+require "optionparser"
 
 module Shortcuts
+
+  # {{{ color
+
   def black;         "\e[30m#{self.to_s}\e[0m" end
   def red;           "\e[31m#{self.to_s}\e[0m" end
   def green;         "\e[32m#{self.to_s}\e[0m" end
@@ -27,34 +31,29 @@ module Shortcuts
   def blink;         "\e[5m#{self.to_s}\e[25m" end
   def reverse_color; "\e[7m#{self.to_s}\e[27m" end
 
-  def as_tok;           self.to_s.magenta   end
-  def prefixed(prefix); "#{prefix} #{self}" end
+  # }}}
 
-  def psuc
-    puts self.to_s.green.prefixed(" > ".black.bg_green)
-    return true
+  # {{{ format
+
+  def as_tok
+    self.to_s.magenta
   end
 
-  def pinf
-    puts self.to_s.blue.prefixed(" I ".black.bg_blue)
-    return true
+  def prefixed(prefix)
+    "#{prefix} #{self}"
   end
 
-  def perr(exit_code: nil)
-    puts self.to_s.red.prefixed(" ! ".black.bg_red)
-    exit(exit_code) unless exit_code.nil?
-    return false
+  def simulated
+    prefixed "[simulated]".bg_yellow.black
   end
 
-  def pwrn(ask_continue: false)
-    puts self.to_s.yellow.prefixed(" W ".black.bg_yellow)
-    exit(-1) if ask_continue && !ask("continue")
-    return false
+  def escape
+    Shellwords.escape self.to_s
   end
 
-  def escape; Shellwords.escape(self.to_s) end
+  # }}}
 
-  def to_pn; Pathname.new(self.to_s) end
+  # {{{ input
 
   def ask(type: :string)
     question = self.to_s.gsub(/[?]*/, "")
@@ -85,25 +84,67 @@ module Shortcuts
     end
   end
 
+  # }}}
+
+  # {{{ output
+
+  def psuc
+    puts self.to_s.green.prefixed(" > ".black.bg_green)
+    return true
+  end
+
+  def pinf
+    puts self.to_s.blue.prefixed(" I ".black.bg_blue)
+    return true
+  end
+
+  def perr(exit_code: nil)
+    puts self.to_s.red.prefixed(" ! ".black.bg_red)
+    exit(exit_code) unless exit_code.nil?
+    return false
+  end
+
+  def pwrn(ask_continue: false)
+    puts self.to_s.yellow.prefixed(" W ".black.bg_yellow)
+    exit(-1) if ask_continue && !"continue".ask
+    return false
+  end
+
+  # }}}
+
+  # {{{ type conversion
+
+  def to_pn
+    Pathname.new self.to_s
+  end
+
+  # }}}
+
+  # {{{ execution
+
   def run(*args, dir: nil, msg: nil, verbose: true, simulate: false)
     cmd = "#{self}"
-    cmd << " " + args.map { |arg| Shellwords.escape(arg) }.join(" ") unless args.empty?
+    unless args.empty?
+      cmd << " "
+      cmd << args.map { |arg| Shellwords.escape(arg.to_s.strip) }.join(" ")
+    end
 
-    status = if dir
+    status = false
+    if dir
       FileUtils.cd(dir) do
         msg.pinf if msg
         if simulate
-          "triggered command `#{cmd}`".pinf
+          status = "run command `#{cmd}`".simulated.pinf
         else
-          system(cmd)
+          status = system(cmd)
         end
       end
     else
       msg.pinf if msg
       if simulate
-        "triggered command `#{cmd}`".pinf
+        status = "run command `#{cmd}`".simulated.pinf
       else
-        system(cmd)
+        status = system(cmd)
       end
     end
 
@@ -119,8 +160,16 @@ module Shortcuts
   end
 
   def chperms(perms, simulate: false)
-    FileUtils.chmod(perms.to_s.to_i(8), self.to_s, noop: simulate)
+    if simulate
+      "change permissions to: `#{perms}`".simulated.pinf
+    else
+      FileUtils.chmod(perms.to_s.to_i(8), self.to_s)
+    end
   end
+
+  # }}}
+
+  # {{{ replication
 
   def build_script(to: nil, simulate: false)
     script_path = self.to_s.to_pn
@@ -128,7 +177,7 @@ module Shortcuts
 
     return "invalid script: not a valid file".perr unless script_path.file?
 
-    "building script `#{script_path}`".pinf
+    "building script `#{script_path.as_tok}`".pinf
 
     hashbang    = "#!/usr/bin/env ruby"
     separator   = "# entry-point"
@@ -136,11 +185,13 @@ module Shortcuts
     script_data = script_path.read
     dst_data    = "#{hashbang}\n\n#{sfw_data}\n\n#{separator}\n#{script_data}"
 
-    "successfully built script `#{script_path}`".psuc
+    "script successfully built".psuc
 
     perms = "555"
     if simulate
-      "writing built script to `#{dst_path}` (perms: #{perms})".pinf if dst_path
+      if dst_path
+        "wrote to `#{dst_path.as_tok}` (perms: #{perms.as_tok})".simulated.pinf
+      end
     else
       dst_path.write dst_data if dst_path
       dst_path.chperms perms
@@ -148,6 +199,9 @@ module Shortcuts
 
     return dst_data
   end
+
+  # }}}
+
 end
 
 class String

@@ -14,7 +14,7 @@ DEST_DIR    = "/usr/local/bin".to_pn
 # ──────────────────────────────────────────────────────────────────── Utils ──┐
 def copy_chips(category, simulate)
   Pathname.glob(SCRIPTS_DIR.join(category.to_s).join("*")) do |chip_src_path|
-    "installing chip `#{chip_src_path.basename}`..".pinf
+    "installing chip `#{chip_src_path.basename.as_tok}`..".pinf
     chip_dst_path = DEST_DIR.join(chip_src_path.basename)
     chip_src_path.build_script to: chip_dst_path, simulate: simulate
   end
@@ -22,16 +22,42 @@ end
 # ─────────────────────────────────────────────────────────────────────────────┘
 
 # ────────────────────────────────────────────────────────────── Entry Point ──┐
-simulate = "simulate setup".ask type: :bool
-ensure_root unless simulate
+
 categories = Pathname.glob(SCRIPTS_DIR.join("*")).map do |category_path|
   category_path.basename.to_s
 end
 
-categories.each do |category|
-  if "include #{category}".ask type: :bool
-    copy_chips category, simulate
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: setup [options]"
+
+  opts.on("-s", "--[no-]simulate", "Run in simulate mode") do |simulate|
+    options[:simulate] = simulate
+    "running in `simulate` mode".pinf if options[:simulate]
   end
+
+  opts.on("-c", "--categories x,y,z", Array, "Categories to include") do |cat|
+    options[:categories] = cat
+  end
+
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts opts
+    exit
+  end
+end.parse!
+
+
+selected_categories = if options[:categories]
+  options[:categories]
+else
+  "asking for selected categories..".pinf
+  categories.select { |category| "include #{category}".ask type: :bool }
+end
+
+ensure_root unless options[:simulate]
+
+if "performing setup of categories: `#{selected_categories}`. are you sure".ask
+  selected_categories.each { |category| copy_chips category, options[:simulate] }
 end
 # ─────────────────────────────────────────────────────────────────────────────┘
 
