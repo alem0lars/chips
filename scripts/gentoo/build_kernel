@@ -1,6 +1,22 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env ruby
 
 
+def exec_cmd()
+
+def compile(kernel_dir)
+  FileUtils.cd(kernel_dir) do
+    system("make")
+  end
+end
+
+def compile(kernel_dir)
+  FileUtils.cd(kernel_dir) do
+    system("make")
+  end
+end
+
+cd "/usr/src/linux"
+echo $EUID
 echo ">> Compiling.."
 make
 
@@ -14,4 +30,4 @@ echo ">> Creating the initramfs.."
 dracut --force initrd-`uname -r`
 
 
-# vim: set filetype=zsh :
+# vim: set filetype=ruby :

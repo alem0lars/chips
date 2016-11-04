@@ -66,16 +66,20 @@ end
 def copy_chips(category, simulate: true)
   Pathname.glob(SCRIPTS_DIR.join(category.to_s).join("*")) do |chip_src_path|
     chip_dst_path = DEST_DIR.join(chip_src_path.basename)
-    cmd = [
-      "sudo",
-      "cp",
-      Shellwords.escape(chip_src_path),
-      Shellwords.escape(chip_dst_path)
-    ].join(" ")
-    if simulate
-      puts(cmd)
-    else
-      system(cmd)
+    chip_src_path = Shellwords.escape(chip_src_path)
+    chip_dst_path = Shellwords.escape(chip_dst_path)
+    cmds = [
+      ["sudo", "cp", chip_src_path, chip_dst_path],
+      ["sudo", "chmod", "+x", chip_src_path, chip_dst_path]
+    ]
+
+    cmds.each do |cmd|
+      cmd = cmd.join(" ") if cmd.is_a?(Array)
+      if simulate
+        puts(cmd)
+      else
+        system(cmd)
+      end
     end
   end
 end
