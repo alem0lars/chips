@@ -60,6 +60,7 @@ FileUtils.cd("/tmp") do
   run "lpass login #{user_email}", detached: false
   run "lpass sync", detached: false
 
+  ssh_key = File.expand_path(ssh_key)
   run "ssh-add #{ssh_key}", detached: false if File.file?(ssh_key)
 
   run "redshift -l 44.144776:12.249972 -t 6000:4000", root: true
