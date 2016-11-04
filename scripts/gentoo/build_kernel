@@ -1,33 +1,13 @@
-#!/usr/bin/env ruby
+ensure_root
 
+kernel_dir = "/usr/src/linux".to_pn
+boot_dir   = "/boot".to_pn
 
-def exec_cmd()
-
-def compile(kernel_dir)
-  FileUtils.cd(kernel_dir) do
-    system("make")
-  end
-end
-
-def compile(kernel_dir)
-  FileUtils.cd(kernel_dir) do
-    system("make")
-  end
-end
-
-cd "/usr/src/linux"
-echo $EUID
-echo ">> Compiling.."
-make
-
-echo ">> Installing kernel modules.."
-make modules_install
-
-echo ">> Installing the kernel image.."
-make install
-
-echo ">> Creating the initramfs.."
-dracut --force initrd-`uname -r`
+[ -> { "make".run dir: kernel_dir, msg: "compiling.." },
+  -> { "make".run "modules_install", dir: kernel_dir, msg: "installing kernel modules.." },
+  -> { "make".run "install", dir: kernel_dir, msg: "installing kernel image.." },
+  -> { "dracut".run "--force", boot_dir.join("initrd-#{uname}"), msg: "generating the initramfs.." }
+].do_all
 
 
 # vim: set filetype=ruby :

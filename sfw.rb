@@ -1,0 +1,182 @@
+require "shellwords"
+require "pathname"
+require "fileutils"
+
+module Shortcuts
+  def black;         "\e[30m#{self.to_s}\e[0m" end
+  def red;           "\e[31m#{self.to_s}\e[0m" end
+  def green;         "\e[32m#{self.to_s}\e[0m" end
+  def yellow;        "\e[33m#{self.to_s}\e[0m" end
+  def blue;          "\e[34m#{self.to_s}\e[0m" end
+  def magenta;       "\e[35m#{self.to_s}\e[0m" end
+  def cyan;          "\e[36m#{self.to_s}\e[0m" end
+  def gray;          "\e[37m#{self.to_s}\e[0m" end
+
+  def bg_black;      "\e[40m#{self.to_s}\e[0m" end
+  def bg_red;        "\e[41m#{self.to_s}\e[0m" end
+  def bg_green;      "\e[42m#{self.to_s}\e[0m" end
+  def bg_yellow;     "\e[43m#{self.to_s}\e[0m" end
+  def bg_blue;       "\e[44m#{self.to_s}\e[0m" end
+  def bg_magenta;    "\e[45m#{self.to_s}\e[0m" end
+  def bg_cyan;       "\e[46m#{self.to_s}\e[0m" end
+  def bg_gray;       "\e[47m#{self.to_s}\e[0m" end
+
+  def bold;          "\e[1m#{self.to_s}\e[22m" end
+  def italic;        "\e[3m#{self.to_s}\e[23m" end
+  def underline;     "\e[4m#{self.to_s}\e[24m" end
+  def blink;         "\e[5m#{self.to_s}\e[25m" end
+  def reverse_color; "\e[7m#{self.to_s}\e[27m" end
+
+  def as_tok;           self.to_s.magenta   end
+  def prefixed(prefix); "#{prefix} #{self}" end
+
+  def psuc
+    puts self.to_s.green.prefixed(" > ".black.bg_green)
+    return true
+  end
+
+  def pinf
+    puts self.to_s.blue.prefixed(" I ".black.bg_blue)
+    return true
+  end
+
+  def perr(exit_code: nil)
+    puts self.to_s.red.prefixed(" ! ".black.bg_red)
+    exit(exit_code) unless exit_code.nil?
+    return false
+  end
+
+  def pwrn(ask_continue: false)
+    puts self.to_s.yellow.prefixed(" W ".black.bg_yellow)
+    exit(-1) if ask_continue && !ask("continue")
+    return false
+  end
+
+  def escape; Shellwords.escape(self.to_s) end
+
+  def to_pn; Pathname.new(self.to_s) end
+
+  def ask(type: :string)
+    question = self.to_s.gsub(/[?]*/, "")
+    question.strip!
+    question << "? "
+
+    $stdout.write question.magenta.prefixed(" ? ".black.bg_magenta)
+    answer = gets.chomp
+
+    case type
+      when :bool
+        if answer =~ /(y|ye|yes|yeah|ofc)$/i
+          true
+        elsif answer =~ /(n|no|fuck|fuck\s+you|fuck\s+off)$/i
+          false
+        else
+          "answer misunderstood".pwrn
+          ask question, type: type
+        end
+      when :string
+        if answer.empty?
+          "empty answer".pwrn
+          ask question, type: type
+        else
+          answer
+        end
+      else "unhandled question type: `#{type}`".perr
+    end
+  end
+
+  def run(*args, dir: nil, msg: nil, verbose: true, simulate: false)
+    cmd = "#{self}"
+    cmd << " " + args.map { |arg| Shellwords.escape(arg) }.join(" ") unless args.empty?
+
+    status = if dir
+      FileUtils.cd(dir) do
+        msg.pinf if msg
+        if simulate
+          "triggered command `#{cmd}`".pinf
+        else
+          system(cmd)
+        end
+      end
+    else
+      msg.pinf if msg
+      if simulate
+        "triggered command `#{cmd}`".pinf
+      else
+        system(cmd)
+      end
+    end
+
+    if !simulate
+      if status
+        "command `#{cmd}` successfully run".psuc if verbose
+      else
+        "command `#{cmd}` failed to run".perr if verbose
+      end
+    end
+
+    status
+  end
+
+  def chperms(perms, simulate: false)
+    FileUtils.chmod(perms.to_s.to_i(8), self.to_s, noop: simulate)
+  end
+
+  def build_script(to: nil, simulate: false)
+    script_path = self.to_s.to_pn
+    dst_path = to.to_s.to_pn unless to.nil?
+
+    return "invalid script: not a valid file".perr unless script_path.file?
+
+    "building script `#{script_path}`".pinf
+
+    hashbang    = "#!/usr/bin/env ruby"
+    separator   = "# entry-point"
+    sfw_data    = __FILE__.to_pn.read
+    script_data = script_path.read
+    dst_data    = "#{hashbang}\n\n#{sfw_data}\n\n#{separator}\n#{script_data}"
+
+    "successfully built script `#{script_path}`".psuc
+
+    perms = "555"
+    if simulate
+      "writing built script to `#{dst_path}` (perms: #{perms})".pinf if dst_path
+    else
+      dst_path.write dst_data if dst_path
+      dst_path.chperms perms
+    end
+
+    return dst_data
+  end
+end
+
+class String
+  include Shortcuts
+end
+
+class Pathname
+  include Shortcuts
+end
+
+class Array
+  def do_all
+    status = true
+
+    self.each do |blk|
+      break unless status
+      status = blk.call
+    end
+
+    status
+  end
+end
+
+def ensure_root
+  if !(Process.euid == 0)
+    "you need root privileges in order to build the kernel".perr exit_code: -1
+  end
+end
+
+def uname
+  `uname -r`
+end
