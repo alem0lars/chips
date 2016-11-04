@@ -123,6 +123,8 @@ module Shortcuts
   # {{{ execution
 
   def run(*args, dir: nil, msg: nil, verbose: true, simulate: false)
+    simulate ||= $simulate
+
     cmd = "#{self}"
     unless args.empty?
       cmd << " "
@@ -134,7 +136,7 @@ module Shortcuts
       FileUtils.cd(dir) do
         msg.pinf if msg
         if simulate
-          status = "run command `#{cmd}`".simulated.pinf
+          status = "run command `#{cmd.as_tok}` (workdir: `#{dir.as_tok}`)".simulated.pinf
         else
           status = system(cmd)
         end
@@ -142,7 +144,7 @@ module Shortcuts
     else
       msg.pinf if msg
       if simulate
-        status = "run command `#{cmd}`".simulated.pinf
+        status = "run command `#{cmd.as_tok}`".simulated.pinf
       else
         status = system(cmd)
       end
@@ -150,9 +152,9 @@ module Shortcuts
 
     if !simulate
       if status
-        "command `#{cmd}` successfully run".psuc if verbose
+        "command `#{cmd.as_tok}` successfully run".psuc if verbose
       else
-        "command `#{cmd}` failed to run".perr if verbose
+        "command `#{cmd.as_tok}` failed to run".perr if verbose
       end
     end
 
@@ -160,6 +162,8 @@ module Shortcuts
   end
 
   def chperms(perms, simulate: false)
+    simulate ||= $simulate
+
     if simulate
       "change permissions to: `#{perms}`".simulated.pinf
     else
@@ -172,6 +176,8 @@ module Shortcuts
   # {{{ replication
 
   def build_script(to: nil, simulate: false)
+    simulate ||= $simulate
+
     script_path = self.to_s.to_pn
     dst_path = to.to_s.to_pn unless to.nil?
 
@@ -233,4 +239,24 @@ end
 
 def uname
   `uname -r`
+end
+
+def parse_args(simulate_enabled: true)
+  options = {}
+  OptionParser.new do |parser|
+    if simulate_enabled
+      parser.on("-s", "--[no-]simulate", "Run in simulate mode") do |simulate|
+        $simulate = options[:simulate] = simulate
+        "running in `simulate` mode".pinf if $simulate
+      end
+    end
+
+    yield(parser, options) if block_given?
+
+    parser.on_tail("-h", "--help", "Show this message") do
+      puts parser
+      exit
+    end
+  end.parse!
+  options
 end
