@@ -1,7 +1,11 @@
-require "shellwords"
-require "pathname"
 require "fileutils"
+require "json"
+require "mkmf"
 require "optionparser"
+require "pathname"
+require "shellwords"
+
+MakeMakefile::Logging.instance_variable_set(:@logfile, File::NULL)
 
 module Shortcuts
 
@@ -122,6 +126,10 @@ module Shortcuts
 
   # {{{ execution
 
+  def check_program
+    find_executable0(self.to_s)
+  end
+
   def run(*args, dir: nil, msg: nil, verbose: true, simulate: false)
     simulate ||= $simulate
 
@@ -173,6 +181,41 @@ module Shortcuts
 
   # }}}
 
+  # {{{ misc
+
+  def get_config(default: nil)
+    name = self.to_s
+
+    avail_config_paths = [
+      "/etc".to_pn.join(name),
+      ENV["HOME"].to_pn.join(".config", name),
+      ENV["HOME"].to_pn.join(".#{name}")
+    ]
+
+    config = default
+
+    config.merge!(avail_config_paths.each_with_object({}) do |config_path, hash|
+      begin
+        hash.merge!(JSON.parse(config_path.read)) if config_path.readable?
+      rescue JSON::ParserError => err
+        "skipping invalid config at `#{config.as_tok}`".pwrn
+      end
+    end)
+
+    env_var_name = "CFG_#{name.upcase}"
+    if ENV.has_key?(env_var_name)
+      begin
+        config.merge!(JSON.parse(ENV[env_var_name]))
+      rescue JSON::ParserError => err
+        "skipping invalid config in the environment variable `#{env_var_name.as_tok}`".pwrn
+      end
+    end
+
+    config.deep_symbolize_keys
+  end
+
+  # }}}
+
   # {{{ replication
 
   def build_script(to: nil, simulate: false)
@@ -185,11 +228,15 @@ module Shortcuts
 
     "building script `#{script_path.as_tok}`".pinf
 
-    hashbang    = "#!/usr/bin/env ruby"
-    separator   = "# entry-point"
-    sfw_data    = __FILE__.to_pn.read
     script_data = script_path.read
-    dst_data    = "#{hashbang}\n\n#{sfw_data}\n\n#{separator}\n#{script_data}"
+    if script_path.extname == ".rb"
+      hashbang    = "#!/usr/bin/env ruby"
+      separator   = "# entry-point"
+      sfw_data    = __FILE__.to_pn.read
+      dst_data    = "#{hashbang}\n\n#{sfw_data}\n\n#{separator}\n#{script_data}"
+    else
+      dst_data = script_data
+    end
 
     "script successfully built".psuc
 
@@ -199,6 +246,7 @@ module Shortcuts
         "wrote to `#{dst_path.as_tok}` (perms: #{perms.as_tok})".simulated.pinf
       end
     else
+      dst_path.delete if dst_path.file?
       dst_path.write dst_data if dst_path
       dst_path.chperms perms
     end
@@ -211,14 +259,27 @@ module Shortcuts
 end
 
 class String
+
   include Shortcuts
+
+end
+
+class Symbol
+
+  include Shortcuts
+
 end
 
 class Pathname
+
   include Shortcuts
+
 end
 
 class Array
+
+  include Shortcuts
+
   def do_all
     status = true
 
@@ -229,11 +290,110 @@ class Array
 
     status
   end
+
+end
+
+class Hash
+
+  include Shortcuts
+
+  # Extract `n` sample key/value pairs from the underlying `Hash`.
+  def sample(n=1)
+    Hash[self.to_a.sample(n)]
+  end
+
+  # Perform recursive merge of the current `Hash` (`self`) with the provided one
+  # (the `second` argument).
+  #
+  # The merge have knows how to recurse in both `Hash`es and `Array`s.
+  def deep_merge(second)
+    merger = proc do |key, v1, v2|
+      if Hash === v1 && Hash === v2
+        v1.merge(v2, &merger)
+      elsif Array === v1 && Array === v2
+        (Set.new(v1) + Set.new(v2)).to_a
+      else
+        v2
+      end
+    end
+    self.merge(second, &merger)
+  end
+
+  def fqkeys(prefix="")
+    self.inject([]) do |acc, (k, v)|
+      prefix_new = prefix.empty? ? k.to_s : "#{prefix}.#{k}"
+      acc + (v.is_a?(Hash) ? v.fqkeys(prefix_new) : [prefix_new])
+    end
+  end
+
+  def slice(*keys)
+    self.select{|k, _| keys.include?(k)}
+  end
+
+  # Return a new `Hash` with all keys converted to `String`s.
+  def deep_stringify_keys
+    deep_transform_keys{ |key| key.to_s }
+  end
+
+  # Destructively convert all keys to `String`s.
+  def deep_stringify_keys!
+    deep_transform_keys!{ |key| key.to_s }
+  end
+
+  # Return a new `Hash` with all keys converted to `Symbol`s, as long as they
+  # respond to `to_sym`.
+  def deep_symbolize_keys
+    deep_transform_keys{ |key| key.to_sym rescue key }
+  end
+
+  # Destructively convert all keys to `Symbol`s, as long as they respond to
+  # `to_sym`.
+  def deep_symbolize_keys!
+    deep_transform_keys!{ |key| key.to_sym rescue key }
+  end
+
+  # Return a new `Hash` with all keys converted by the block operation.
+  def deep_transform_keys(&block)
+    deep_transform_keys_in_object(self, &block)
+  end
+
+  # Destructively convert all keys by using the block operation.
+  def deep_transform_keys!(&block)
+    deep_transform_keys_in_object!(self, &block)
+  end
+
+  def deep_transform_keys_in_object(object, &block)
+    case object
+      when Hash
+        object.each_with_object({}) do |(key, value), result|
+          result[yield(key)] = deep_transform_keys_in_object(value, &block)
+        end
+      when Array
+        object.map {|e| deep_transform_keys_in_object(e, &block)}
+      else object
+    end
+  end
+  private :deep_transform_keys_in_object
+
+  def deep_transform_keys_in_object!(object, &block)
+    case object
+      when Hash
+        object.keys.each do |key|
+          value = object.delete(key)
+          object[yield(key)] = deep_transform_keys_in_object!(value, &block)
+        end
+        object
+      when Array
+        object.map! {|e| deep_transform_keys_in_object!(e, &block)}
+      else object
+    end
+  end
+  private :deep_transform_keys_in_object!
 end
 
 def ensure_root
   if !(Process.euid == 0)
-    "you need root privileges in order to build the kernel".perr exit_code: -1
+    "the script needs root privileges".perr exit_code: -1
   end
 end
 

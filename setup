@@ -15,7 +15,7 @@ DEST_DIR    = "/usr/local/bin".to_pn
 def copy_chips(category)
   Pathname.glob(SCRIPTS_DIR.join(category.to_s).join("*")) do |chip_src_path|
     "installing chip `#{chip_src_path.basename.as_tok}`..".pinf
-    chip_dst_path = DEST_DIR.join(chip_src_path.basename)
+    chip_dst_path = DEST_DIR.join(chip_src_path.basename(chip_src_path.extname))
     chip_src_path.build_script to: chip_dst_path
   end
 end
