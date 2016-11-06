@@ -144,8 +144,9 @@ module Shortcuts
     out = quiet ? File::NULL : $stdout
     err = quiet ? File::NULL : $stderr
 
-    cmd = self.to_s
-    pretty_cmd = cmd.dup
+    program_name = self.to_s
+    cmd = program_name.dup
+    pretty_cmd = program_name.dup
     unless args.empty?
       cmd << " "
       cmd << args.map do |arg|
@@ -159,7 +160,7 @@ module Shortcuts
     end
 
     status = false
-    if single && cmd.is_running
+    if single && program_name.is_running
       "command `#{pretty_cmd.as_tok}` is already running".pinf
     else
       cmd << " &" if detached
