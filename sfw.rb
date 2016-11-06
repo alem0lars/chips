@@ -130,8 +130,11 @@ module Shortcuts
     find_executable0(self.to_s)
   end
 
-  def run(*args, dir: nil, msg: nil, verbose: true, simulate: false, detached: false)
+  def run(*args, dir: nil, msg: nil, verbose: true, quiet: false, simulate: false, detached: false)
     simulate ||= $simulate
+
+    out = quiet ? File::NULL : $stdout
+    err = quiet ? File::NULL : $stderr
 
     cmd = "#{self}"
     unless args.empty?
@@ -147,7 +150,7 @@ module Shortcuts
         if simulate
           status = "run command `#{cmd.as_tok}` (workdir: `#{dir.as_tok}`)".simulated.pinf
         else
-          status = system(cmd)
+          status = system(cmd, out: out, err: err)
         end
       end
     else
@@ -155,7 +158,7 @@ module Shortcuts
       if simulate
         status = "run command `#{cmd.as_tok}`".simulated.pinf
       else
-        status = system(cmd)
+        status = system(cmd, out: out, err: err)
       end
     end
 

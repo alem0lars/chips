@@ -3,31 +3,45 @@ config = "startup_setup".get_config
 options = parse_args
 
 if config[:lastpass]
-  "lpass".run "logout"
-  "lpass".run "login", config[:lastpass][:user][:email]
-  "lpass".run "sync"
+  if !"lpass".run("status", verbose: false, quiet: true)
+    [ -> { "lpass".run "login", config[:lastpass][:user] },
+      -> { "lpass".run "sync" }
+    ].do_all
+  else
+    "lastpass login skipped: already logged in".psuc
+  end
 end
 
 ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
 "ssh-add".run("#{ssh_key}") if File.file?(ssh_key)
 
-"unclutter".run "-root"
+"unclutter".run "-root", detached: true
 
 "start-pulseaudio-x11".run
 
-"urxvtd".run(detached: true)
+"urxvtd".run detached: true
 
-"copyq".run(detached: true) if options[:copyq]
+"copyq".run(detached: true) if config[:copyq]
 
-"openterm".run("--title", "weechat", "--cmd", "weechat", detached: true) if options[:weechat]
-"openterm".run("--title", "mutt", "--cmd", "mutt", detached: true) if options[:mutt]
-"openterm".run("--title", "turses", "--cmd", "turses", detached: true) if options[:turses]
+"openterm".run("--title", "weechat", "--cmd", "weechat") if config[:weechat]
+"openterm".run("--title", "mutt", "--cmd", "mutt") if config[:mutt]
+"openterm".run("--title", "turses", "--cmd", "turses") if config[:turses]
 
-"toggl".run(detached: true) if config[:toggl]
+"openterm".run "--title", "task", "--cmd", "task sync && task list"
+"openterm".run "--title", "anapnea", "--cmd", "ssh alem0lars@anapnea.net"
+"openterm".run "--title", "sysmon", "--cmd", "tmuxinator start sysmon",
+               "--without-tmux"
 
-"openterm".run "--title", "task", "--cmd", "task sync && task list", detached: true
-"openterm".run "--title", "anapnea", "--cmd", "ssh alem0lars@anapnea.net", detached: true
-"openterm".run "--title", "sysmon", "--cmd", "tmuxinator start sysmon", detached: true
-
+if config[:mega]
+  config[:mega].each do |e|
+    "megacopy".run "--reload", "--download",
+                   "-r", "/Root".to_pn.join(e[:remote]),
+                   "-l", e[:local],
+                   "-u", e[:user],
+                   "-p", e[:lpassword] ?
+                         `lpass show --password #{e[:lpassword]}` :
+                         e[:password]
+  end
+end
 
 # vim: set filetype=ruby :
