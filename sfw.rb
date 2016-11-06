@@ -183,7 +183,7 @@ module Shortcuts
 
   # {{{ misc
 
-  def get_config(default: nil)
+  def get_config(default: {})
     name = self.to_s
 
     avail_config_paths = [

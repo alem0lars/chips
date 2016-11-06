@@ -1,94 +1,33 @@
-#!/usr/bin/env ruby
+config = "startup_setup".get_config
 
-require "fileutils"
-require "etc"
-require "syslog/logger"
-require "io/console"
-require "shellwords"
+options = parse_args
 
-
-# TODO: get from fizzy
-network_manager = true
-user_email  = "alessandro.molari@yoroi.company"
-web_browser = "chromium-browser"
-clipboard   = "copyq"
-keyb_layout = "us"
-ssh_key     = "~/.ssh/id_rsa"
-
-
-$log = Syslog::Logger.new(File.basename(__FILE__))
-$root_pwd = nil
-$simulate = ENV["SS_SIMULATE"]
-
-
-def run(cmd, root: false, detached: true)
-  if root
-    if $root_pwd.nil?
-      print "Insert root password: "
-      $root_pwd = STDIN.noecho(&:gets).chomp
-    end
-    cmd = "echo #{Shellwords.escape($root_pwd)} | sudo -S #{cmd}"
-  end
-  cmd += " &" if detached
-
-  $log.info "Running `#{cmd}`#{root ? " as `root`" : ""}"
-  if $simulate
-    puts cmd
-  else
-    system cmd
-  end
+if config[:lastpass]
+  "lpass".run "logout"
+  "lpass".run "login", config[:lastpass][:user][:email]
+  "lpass".run "sync"
 end
 
-def openterm(cmd, title=nil)
-  title = cmd if title.nil?
+ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
+"ssh-add".run("#{ssh_key}") if File.file?(ssh_key)
 
-  args  = ["openterm"]
-  args << "--title #{Shellwords.escape(title)}" if title
-  args << "--cmd   #{Shellwords.escape(cmd)}" if cmd
+"unclutter".run "-root"
 
-  run args.join(" "), detached: true
-end
+"start-pulseaudio-x11".run
 
+"urxvtd".run
 
-FileUtils.cd("/tmp") do
-  $log.info "Starting `startup_setup`"
+"copyq".run if options[:copyq]
 
-  run "setxkbmap -option setxkbmap #{keyb_layout}", detached: false
-  run "setxkbmap -option ctrl:nocaps", detached: false
+"openterm".run("--title", "weechat", "--cmd", "weechat") if options[:weechat]
+"openterm".run("--title", "mutt", "--cmd", "mutt") if options[:mutt]
+"openterm".run("--title", "turses", "--cmd", "turses") if options[:turses]
 
-  run "lpass logout", detached: false
-  run "lpass login #{user_email}", detached: false
-  run "lpass sync", detached: false
+"toggl".run if config[:toggl]
 
-  ssh_key = File.expand_path(ssh_key)
-  run "ssh-add #{ssh_key}", detached: false if File.file?(ssh_key)
-
-  run "redshift -l 44.144776:12.249972 -t 6000:4000", root: true
-
-  run "unclutter -root"
-  run "start-pulseaudio-x11"
-  run "urxvtd"
-
-  run "nm-applet" if network_manager
-
-  run clipboard
-
-  run web_browser
-  run "zeal"
-
-  openterm "weechat"
-  run "slack --disable-gpu" # TODO: Remove slack
-  run "thunderbird" # TODO: Remove thunderbird
-  # openterm "mutt" TODO: uncomment when mutt is added
-  # openterm "turses" TODO: uncomment when turses is added
-
-  run "toggl"
-  openterm "taskwarrior", "task sync && task list"
-
-  openterm "anapnea", "ssh alem0lars@anapnea.net"
-
-  openterm "tmuxp load sysmon", false
-end
+"openterm".run "--title", "task", "--cmd", "task sync && task list"
+"openterm".run "--title", "anapnea", "--cmd", "ssh alem0lars@anapnea.net"
+"openterm".run "--title", "sysmon", "--cmd", "tmuxinator start sysmon"
 
 
 # vim: set filetype=ruby :
