@@ -130,7 +130,7 @@ module Shortcuts
     find_executable0(self.to_s)
   end
 
-  def run(*args, dir: nil, msg: nil, verbose: true, simulate: false)
+  def run(*args, dir: nil, msg: nil, verbose: true, simulate: false, detached: false)
     simulate ||= $simulate
 
     cmd = "#{self}"
@@ -138,6 +138,7 @@ module Shortcuts
       cmd << " "
       cmd << args.map { |arg| Shellwords.escape(arg.to_s.strip) }.join(" ")
     end
+    cmd << " &" if detached
 
     status = false
     if dir

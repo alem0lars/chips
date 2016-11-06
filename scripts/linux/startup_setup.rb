@@ -15,19 +15,19 @@ ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
 
 "start-pulseaudio-x11".run
 
-"urxvtd".run
+"urxvtd".run(detached: true)
 
-"copyq".run if options[:copyq]
+"copyq".run(detached: true) if options[:copyq]
 
-"openterm".run("--title", "weechat", "--cmd", "weechat") if options[:weechat]
-"openterm".run("--title", "mutt", "--cmd", "mutt") if options[:mutt]
-"openterm".run("--title", "turses", "--cmd", "turses") if options[:turses]
+"openterm".run("--title", "weechat", "--cmd", "weechat", detached: true) if options[:weechat]
+"openterm".run("--title", "mutt", "--cmd", "mutt", detached: true) if options[:mutt]
+"openterm".run("--title", "turses", "--cmd", "turses", detached: true) if options[:turses]
 
-"toggl".run if config[:toggl]
+"toggl".run(detached: true) if config[:toggl]
 
-"openterm".run "--title", "task", "--cmd", "task sync && task list"
-"openterm".run "--title", "anapnea", "--cmd", "ssh alem0lars@anapnea.net"
-"openterm".run "--title", "sysmon", "--cmd", "tmuxinator start sysmon"
+"openterm".run "--title", "task", "--cmd", "task sync && task list", detached: true
+"openterm".run "--title", "anapnea", "--cmd", "ssh alem0lars@anapnea.net", detached: true
+"openterm".run "--title", "sysmon", "--cmd", "tmuxinator start sysmon", detached: true
 
 
 # vim: set filetype=ruby :
