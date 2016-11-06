@@ -131,48 +131,53 @@ module Shortcuts
   end
 
   def is_running
-    if check_program("pgrep") || "`pgrep` is needed".perr
+    if "pgrep".check_program || "`pgrep` is needed".perr
       `pgrep #{self.to_s}`.strip.length > 0
     end
   end
 
-  def run(*args, dir: nil, msg: nil, verbose: true, quiet: false, simulate: false, detached: false)
+  def run(*args, dir: nil, msg: nil, verbose: true, quiet: false, simulate: false, detached: false, single: false)
     simulate ||= $simulate
 
     out = quiet ? File::NULL : $stdout
     err = quiet ? File::NULL : $stderr
 
-    cmd = "#{self}"
+    cmd = self.to_s
     unless args.empty?
       cmd << " "
       cmd << args.map { |arg| Shellwords.escape(arg.to_s.strip) }.join(" ")
     end
-    cmd << " &" if detached
 
     status = false
-    if dir
-      FileUtils.cd(dir) do
+    if single && cmd.is_running
+      "command `#{cmd.as_tok}` is already running".pinf
+    else
+      cmd << " &" if detached
+
+      if dir
+        FileUtils.cd(dir) do
+          msg.pinf if msg
+          if simulate
+            status = "run command `#{cmd.as_tok}` (workdir: `#{dir.as_tok}`)".simulated.pinf
+          else
+            status = system(cmd, out: out, err: err)
+          end
+        end
+      else
         msg.pinf if msg
         if simulate
-          status = "run command `#{cmd.as_tok}` (workdir: `#{dir.as_tok}`)".simulated.pinf
+          status = "run command `#{cmd.as_tok}`".simulated.pinf
         else
           status = system(cmd, out: out, err: err)
         end
       end
-    else
-      msg.pinf if msg
-      if simulate
-        status = "run command `#{cmd.as_tok}`".simulated.pinf
-      else
-        status = system(cmd, out: out, err: err)
-      end
-    end
 
-    if !simulate
-      if status
-        "command `#{cmd.as_tok}` successfully run".psuc if verbose
-      else
-        "command `#{cmd.as_tok}` failed to run".perr if verbose
+      if !simulate
+        if status
+          "command `#{cmd.as_tok}` successfully run".psuc if verbose
+        else
+          "command `#{cmd.as_tok}` failed to run".perr if verbose
+        end
       end
     end
 
