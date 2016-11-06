@@ -34,13 +34,14 @@ ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
 
 if config[:mega]
   config[:mega].each do |e|
+    pwd = e[:lpwd] ? `lpass show --password #{e[:lpwd]}`.strip : e[:pwd]
     "megacopy".run "--reload", "--download",
                    "-r", "/Root".to_pn.join(e[:remote]),
                    "-l", e[:local],
                    "-u", e[:user],
-                   "-p", e[:lpassword] ?
-                         `lpass show --password #{e[:lpassword]}` :
-                         e[:password]
+                   "-p", "<HIDDEN>#{pwd}</HIDDEN>",
+                   quiet: true,
+                   ignore_status: true
   end
 end
 

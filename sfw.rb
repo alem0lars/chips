@@ -136,21 +136,31 @@ module Shortcuts
     end
   end
 
-  def run(*args, dir: nil, msg: nil, verbose: true, quiet: false, simulate: false, detached: false, single: false)
+  def run(*args,
+          dir: nil, msg: nil, verbose: true, quiet: false, simulate: false,
+          detached: false, single: false, ignore_status: false)
     simulate ||= $simulate
 
     out = quiet ? File::NULL : $stdout
     err = quiet ? File::NULL : $stderr
 
     cmd = self.to_s
+    pretty_cmd = cmd.dup
     unless args.empty?
       cmd << " "
-      cmd << args.map { |arg| Shellwords.escape(arg.to_s.strip) }.join(" ")
+      cmd << args.map do |arg|
+        arg.to_s.strip.gsub(/<HIDDEN>(.+)<\/HIDDEN>/, '\1').escape
+      end.join(" ")
+
+      pretty_cmd << " "
+      pretty_cmd << args.map do |arg|
+        arg.to_s.strip.gsub(/\<HIDDEN\>.+\<\/HIDDEN\>/, "HIDDEN").escape
+      end.join(" ")
     end
 
     status = false
     if single && cmd.is_running
-      "command `#{cmd.as_tok}` is already running".pinf
+      "command `#{pretty_cmd.as_tok}` is already running".pinf
     else
       cmd << " &" if detached
 
@@ -158,7 +168,7 @@ module Shortcuts
         FileUtils.cd(dir) do
           msg.pinf if msg
           if simulate
-            status = "run command `#{cmd.as_tok}` (workdir: `#{dir.as_tok}`)".simulated.pinf
+            status = "run command `#{pretty_cmd.as_tok}` (workdir: `#{dir.as_tok}`)".simulated.pinf
           else
             status = system(cmd, out: out, err: err)
           end
@@ -166,22 +176,22 @@ module Shortcuts
       else
         msg.pinf if msg
         if simulate
-          status = "run command `#{cmd.as_tok}`".simulated.pinf
+          status = "run command `#{pretty_cmd.as_tok}`".simulated.pinf
         else
           status = system(cmd, out: out, err: err)
         end
       end
 
       if !simulate
-        if status
-          "command `#{cmd.as_tok}` successfully run".psuc if verbose
+        if ignore_status || status
+          "command `#{pretty_cmd.as_tok}` successfully run".psuc if verbose
         else
-          "command `#{cmd.as_tok}` failed to run".perr if verbose
+          "command `#{pretty_cmd.as_tok}` failed to run".perr if verbose
         end
       end
     end
 
-    status
+    ignore_status || status
   end
 
   def chperms(perms, simulate: false)
