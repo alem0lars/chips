@@ -15,13 +15,13 @@ end
 ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
 "ssh-add".run("#{ssh_key}") if File.file?(ssh_key)
 
-"unclutter".run "-root", detached: true
+"unclutter".run("-root", detached: true) unless "unclutter".is_running
 
-"start-pulseaudio-x11".run
+"start-pulseaudio-x11".run unless "start-pulseaudio-x11".is_running
 
-"urxvtd".run detached: true
+"urxvtd".run(detached: true) unless "urxvtd".is_running
 
-"copyq".run(detached: true) if config[:copyq]
+"copyq".run(detached: true) if config[:copyq] and !"copyq".is_running
 
 "openterm".run("--title", "weechat", "--cmd", "weechat") if config[:weechat]
 "openterm".run("--title", "mutt", "--cmd", "mutt") if config[:mutt]
@@ -43,5 +43,6 @@ if config[:mega]
                          e[:password]
   end
 end
+
 
 # vim: set filetype=ruby :

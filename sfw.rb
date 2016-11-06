@@ -130,6 +130,12 @@ module Shortcuts
     find_executable0(self.to_s)
   end
 
+  def is_running
+    if check_program("pgrep") || "`pgrep` is needed".perr
+      `pgrep #{self.to_s}`.strip.length > 0
+    end
+  end
+
   def run(*args, dir: nil, msg: nil, verbose: true, quiet: false, simulate: false, detached: false)
     simulate ||= $simulate
 
