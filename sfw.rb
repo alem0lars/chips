@@ -124,25 +124,55 @@ module Shortcuts
 
   # }}}
 
+  # {{{ parsing
+
+  def as_pwd!(**run_args)
+    replace self.as_pwd(**run_args)
+  end
+
+  def as_pwd(**run_args)
+    case self.to_s
+    when /^lpass:(?<id>.+)$/ then Regexp.last_match(:id).lpass_show_pwd(**run_args)
+    else self
+    end.dup
+  end
+
+  # }}}
+
   # {{{ execution
+
+  # {{{ specific programs
+
+  def lpass_show_pwd(**run_args)
+    output = StringIO.new
+    run_args[:output] = output
+    run_args[:verbose] = false
+    if "lpass".run("show", "<HIDDEN>#{self.to_s}</HIDDEN>", **run_args)
+      output.to_s
+    end
+  end
+
+  # }}}
 
   def check_program
     find_executable0(self.to_s)
   end
 
-  def is_running
+  def is_running(**run_args)
     if "pgrep".check_program || "`pgrep` is needed".perr
-      `pgrep #{self.to_s}`.strip.length > 0
+      output = StringIO.new
+      run_args[:output] = output
+      run_args[:verbose] = false
+      if "pgrep".run(self.to_s, **run_args)
+        output.to_s.strip.length > 0
+      end
     end
   end
 
   def run(*args,
           dir: nil, msg: nil, verbose: true, quiet: false, simulate: false,
-          detached: false, single: false, ignore_status: false)
+          detached: false, single: false, ignore_status: false, output: $stdout)
     simulate ||= $simulate
-
-    out = quiet ? File::NULL : $stdout
-    err = quiet ? File::NULL : $stderr
 
     program_name = self.to_s
     cmd = program_name.dup
@@ -150,20 +180,27 @@ module Shortcuts
     unless args.empty?
       cmd << " "
       cmd << args.map do |arg|
-        arg.to_s.strip.gsub(/<HIDDEN>(.+)<\/HIDDEN>/, '\1').escape
+        arg.to_s.strip.gsub(/(?:\<HIDDEN\>)+(.+)(?:\<\/HIDDEN\>)+/, '\1').escape
       end.join(" ")
 
       pretty_cmd << " "
       pretty_cmd << args.map do |arg|
-        arg.to_s.strip.gsub(/\<HIDDEN\>.+\<\/HIDDEN\>/, "HIDDEN").escape
+        arg.to_s.strip.gsub(/(?:\<HIDDEN\>)+.+(?:\<\/HIDDEN\>)+/, "HIDDEN").escape
       end.join(" ")
     end
 
     status = false
     if single && program_name.is_running
       "command `#{pretty_cmd.as_tok}` is already running".pinf
+      status = true
     else
       cmd << " &" if detached
+
+      _run = lambda do
+        res = `#{cmd}`
+        output.write(res) if !quiet
+        status = $?.success?
+      end
 
       if dir
         FileUtils.cd(dir) do
@@ -171,7 +208,7 @@ module Shortcuts
           if simulate
             status = "run command `#{pretty_cmd.as_tok}` (workdir: `#{dir.as_tok}`)".simulated.pinf
           else
-            status = system(cmd, out: out, err: err)
+            _run.call
           end
         end
       else
@@ -179,7 +216,7 @@ module Shortcuts
         if simulate
           status = "run command `#{pretty_cmd.as_tok}`".simulated.pinf
         else
-          status = system(cmd, out: out, err: err)
+          _run.call
         end
       end
 
@@ -311,7 +348,11 @@ class Array
 
     self.each do |blk|
       break unless status
-      status = blk.call
+      begin
+        status = blk.call
+      rescue Interrupt
+        "interrupted while running command".pwrn
+      end
     end
 
     status
