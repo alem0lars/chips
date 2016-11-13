@@ -199,7 +199,7 @@ module Shortcuts
       cmd << " &" if detached
 
       _run = lambda do |cmd|
-        res = `#{cmd}`
+        res = `#{cmd} 2>&1`
         output.write(res) if !quiet
         status = $?.success?
       end

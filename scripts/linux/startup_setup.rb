@@ -27,58 +27,6 @@ options = parse_args
       true
     end
   },
-  -> { "unclutter".run "-root", detached: true, single: true },
-  -> { "start-pulseaudio-x11".run single: true },
-  -> { "urxvtd".run detached: true, single: true },
-  -> {
-    if config[:copyq]
-      "copyq".run detached: true, single: true
-    else
-      true
-    end
-  },
-  -> {
-    if config[:weechat]
-      "openterm".run("--title", "weechat", "--cmd", "weechat")
-    else
-      true
-    end
-  },
-  -> {
-    if config[:mutt]
-      "openterm".run("--title", "mutt", "--cmd", "mutt")
-    else
-      true
-    end
-  },
-  -> {
-    if config[:turses]
-      "openterm".run("--title", "turses", "--cmd", "turses")
-    else
-      true
-    end
-  },
-  -> {
-    "openterm".run "--title", "task", "--cmd", "task sync && task list"
-  },
-  -> {
-    if config[:ssh]
-      config[:ssh].each do |ssh|
-        ssh[:pwd].as_pwd!
-        ssh[:title] ||= "#{ssh[:user]}@#{ssh[:server]}"
-        cmd  = ssh[:pwd] ? "sshpass -p <HIDDEN>#{ssh[:pwd]}</HIDDEN> " : ""
-        cmd << "ssh #{ssh[:user]}@#{ssh[:server]}"
-
-        "openterm".run "--title", ssh[:title], "--cmd", cmd
-      end
-    else
-      true
-    end
-  },
-  -> {
-    "openterm".run "--title", "sysmon", "--cmd", "tmuxinator", "start", "sysmon",
-                   "--without-tmux"
-  },
   -> {
     if config[:mega]
       config[:mega].each do |e|
@@ -97,6 +45,58 @@ options = parse_args
     else
       true
     end
+  },
+  -> { "unclutter".run "-root", detached: true, single: true },
+  -> { "start-pulseaudio-x11".run single: true },
+  -> { "urxvtd".run detached: true, single: true },
+  -> {
+    if config[:copyq]
+      "copyq".run detached: true, single: true
+    else
+      true
+    end
+  },
+  -> {
+    if config[:weechat]
+      "openterm".run "--title", "weechat", "--cmd", "weechat", detached: true
+    else
+      true
+    end
+  },
+  -> {
+    if config[:mutt]
+      "openterm".run "--title", "mutt", "--cmd", "mutt", detached: true
+    else
+      true
+    end
+  },
+  -> {
+    if config[:turses]
+      "openterm".run "--title", "turses", "--cmd", "turses", detached: true
+    else
+      true
+    end
+  },
+  -> {
+    "openterm".run "--title", "task", "--cmd", "task sync && task list", detached: true
+  },
+  -> {
+    if config[:ssh]
+      config[:ssh].each do |ssh|
+        ssh[:pwd].as_pwd!
+        ssh[:title] ||= "#{ssh[:user]}@#{ssh[:server]}"
+        cmd  = ssh[:pwd] ? "sshpass -p <HIDDEN>#{ssh[:pwd]}</HIDDEN> " : ""
+        cmd << "ssh #{ssh[:user]}@#{ssh[:server]}"
+
+        "openterm".run "--title", ssh[:title], "--cmd", cmd, detached: true
+      end
+    else
+      true
+    end
+  },
+  -> {
+    "openterm".run "--title", "sysmon", "--cmd", "tmuxinator", "start", "sysmon",
+                   "--no-tmux", detached: true
   }
 ].do_all
 
