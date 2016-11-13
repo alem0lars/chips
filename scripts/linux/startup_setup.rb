@@ -76,7 +76,7 @@ options = parse_args
     end
   },
   -> {
-    "openterm".run "--title", "sysmon", "--cmd", "tmuxinator start sysmon",
+    "openterm".run "--title", "sysmon", "--cmd", "tmuxinator", "start", "sysmon",
                    "--without-tmux"
   },
   -> {

@@ -198,8 +198,7 @@ module Shortcuts
     else
       cmd << " &" if detached
 
-      _run = lambda do
-        cmd.pinf if ENV["DEBUG"]
+      _run = lambda do |cmd|
         res = `#{cmd}`
         output.write(res) if !quiet
         status = $?.success?
@@ -211,7 +210,7 @@ module Shortcuts
           if simulate
             status = "run command `#{pretty_cmd.as_tok}` (workdir: `#{dir.as_tok}`)".simulated.pinf
           else
-            _run.call
+            _run.call(cmd)
           end
         end
       else
@@ -219,7 +218,7 @@ module Shortcuts
         if simulate
           status = "run command `#{pretty_cmd.as_tok}`".simulated.pinf
         else
-          _run.call
+          _run.call(cmd)
         end
       end
 
