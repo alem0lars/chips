@@ -18,7 +18,11 @@ options = parse_args
   }, -> {
     ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
     if File.file?(ssh_key)
-      "ssh-add".run "#{ssh_key}"
+      unless "ssh-add".capture("-l").split("\n").any? { |e| e.split(/\s+/)[2] == ssh_key.to_s }
+        "ssh-add".run "#{ssh_key}"
+      else
+        "ssh key `#{ssh_key.as_tok}` is already present: skipping..".pinf
+      end
     else
       true
     end
@@ -59,10 +63,10 @@ options = parse_args
   },
   -> {
     if config[:ssh]
-      Array(config[:ssh]).each do |ssh|
+      config[:ssh].each do |ssh|
         ssh[:pwd].as_pwd!
         ssh[:title] ||= "#{ssh[:user]}@#{ssh[:server]}"
-        cmd  = ssh[:pwd] ? "sshpass -p <HIDDEN>#{ssh[:pwd].escape}</HIDDEN> " : ""
+        cmd  = ssh[:pwd] ? "sshpass -p <HIDDEN>#{ssh[:pwd]}</HIDDEN> " : ""
         cmd << "ssh #{ssh[:user]}@#{ssh[:server]}"
 
         "openterm".run "--title", ssh[:title], "--cmd", cmd

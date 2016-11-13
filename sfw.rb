@@ -143,13 +143,20 @@ module Shortcuts
 
   # {{{ specific programs
 
-  def lpass_show_pwd(**run_args)
+  def capture(*args, **run_args)
+    program_name = self.to_s
     output = StringIO.new
     run_args[:output] = output
     run_args[:verbose] = false
-    if "lpass".run("show", "<HIDDEN>#{self.to_s}</HIDDEN>", **run_args)
-      output.to_s
+    if program_name.run(*args, **run_args)
+      output.string.strip
+    else
+      ""
     end
+  end
+
+  def lpass_show_pwd(**run_args)
+    "lpass".capture "show", "--pass", "<HIDDEN>#{self.to_s}</HIDDEN>", **run_args
   end
 
   # }}}
@@ -160,12 +167,7 @@ module Shortcuts
 
   def is_running(**run_args)
     if "pgrep".check_program || "`pgrep` is needed".perr
-      output = StringIO.new
-      run_args[:output] = output
-      run_args[:verbose] = false
-      if "pgrep".run(self.to_s, **run_args)
-        output.to_s.strip.length > 0
-      end
+      "pgrep".capture(self.to_s, **run_args).length > 0
     end
   end
 
@@ -197,6 +199,7 @@ module Shortcuts
       cmd << " &" if detached
 
       _run = lambda do
+        cmd.pinf if ENV["DEBUG"]
         res = `#{cmd}`
         output.write(res) if !quiet
         status = $?.success?
