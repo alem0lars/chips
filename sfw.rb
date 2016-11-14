@@ -110,8 +110,11 @@ module Shortcuts
 
   def pwrn(ask_continue: false)
     puts self.to_s.yellow.prefixed(" W ".black.bg_yellow)
-    exit(-1) if ask_continue && !"continue".ask
-    return false
+    if ask_continue
+      "continue".ask
+    else
+      false
+    end
   end
 
   # }}}
@@ -156,7 +159,7 @@ module Shortcuts
   end
 
   def lpass_show_pwd(**run_args)
-    "lpass".capture "show", "--pass", "<HIDDEN>#{self.to_s}</HIDDEN>", **run_args
+    "lpass".capture "show", "--pass", "H-#{self.to_s}-H", **run_args
   end
 
   # }}}
@@ -182,12 +185,12 @@ module Shortcuts
     unless args.empty?
       cmd << " "
       cmd << args.map do |arg|
-        arg.to_s.strip.gsub(/(?:\<HIDDEN\>)+(.+)(?:\<\/HIDDEN\>)+/, '\1').escape
+        arg.to_s.strip.gsub(/(?:H-)+(.*)(?:-H)+/, '\1').escape
       end.join(" ")
 
       pretty_cmd << " "
       pretty_cmd << args.map do |arg|
-        arg.to_s.strip.gsub(/(?:\<HIDDEN\>)+.+(?:\<\/HIDDEN\>)+/, "HIDDEN").escape
+        arg.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
       end.join(" ")
     end
 
@@ -196,17 +199,22 @@ module Shortcuts
       "command `#{pretty_cmd.as_tok}` is already running".pinf
       status = true
     else
-      cmd << " 2>&1"
-      cmd << " &" if detached
-
       _run = lambda do |cmd|
+        cmd << " 2>&1"
+
         begin
-          puts cmd
-          res = `#{cmd}`
-          output.write(res) if !quiet
-          status = $?.success?
+          status = if detached
+            fork do
+              res = `#{cmd}`
+              output.write(`#{cmd}`) unless quiet
+            end
+            true
+          else
+            res = `#{cmd}`
+            output.write(`#{cmd}`) unless quiet
+            $?.success?
+          end
         rescue Interrupt
-          "interrupted while running command `#{pretty_cmd.as_tok}`".pwrn
           status = false
         end
       end
@@ -360,7 +368,7 @@ class Array
       begin
         status = blk.call
       rescue Interrupt
-        "interrupted while running command".pwrn
+        status = "interrupted while running command".pwrn ask_continue: true
       end
     end
 

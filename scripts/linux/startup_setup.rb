@@ -3,11 +3,36 @@ config = "startup_setup".get_config
 options = parse_args
 
 
+def lpass_logged_in?
+  "lpass".run("status", verbose: false, quiet: true)
+end
+
+def lpass_sync
+  "lpass".run "sync"
+end
+
+def lpass_login(user)
+  "lpass".run "login", user
+end
+
+def openterm(cmd, title: nil, tmux: true)
+  args  = []
+  args += ["--title", title]
+  args += [tmux ? "--tmux" : "--no-tmux"]
+  unless cmd.empty?
+    args << "--cmd"
+    args << Array(cmd).map { |e| e.escape }.join(" ")
+  end
+
+  "openterm".run *args
+end
+
+
 [ -> {
     if config[:lastpass]
-      status = if !"lpass".run("status", verbose: false, quiet: true)
-        [ -> { "lpass".run "login", config[:lastpass][:user] },
-          -> { "lpass".run "sync" }
+      status = unless lpass_logged_in?
+        [ -> { lpass_login config[:lastpass][:user] },
+          -> { lpass_sync }
         ].do_all
       else
         "lastpass login skipped: already logged in".psuc
@@ -35,7 +60,7 @@ options = parse_args
           "-r", "/Root".to_pn.join(e[:remote]),
           "-l", e[:local],
           "-u", e[:user],
-          "-p", "<HIDDEN>#{e[:pwd]}</HIDDEN>"
+          "-p", "H-#{e[:pwd]}-H"
         ]
         kwargs = { quiet: true, ignore_status: true }
 
@@ -58,45 +83,47 @@ options = parse_args
   },
   -> {
     if config[:weechat]
-      "openterm".run "--title", "weechat", "--cmd", "weechat"
+      openterm %w(weechat), title: :weechat
     else
       true
     end
   },
   -> {
     if config[:mutt]
-      "openterm".run "--title", "mutt", "--cmd", "mutt"
+      openterm %w(mutt), title: :mutt
     else
       true
     end
   },
   -> {
     if config[:turses]
-      "openterm".run "--title", "turses", "--cmd", "turses"
+      openterm %w(turses), title: :turses
     else
       true
     end
   },
   -> {
-    "openterm".run "--title", "task"
+    openterm title: :task
   },
   -> {
     if config[:ssh]
       config[:ssh].each do |ssh|
         ssh[:pwd].as_pwd!
-        ssh[:title] ||= "#{ssh[:user]}-#{ssh[:server]}"
-        cmd  = ssh[:pwd] ? "sshpass -p <HIDDEN>#{ssh[:pwd]}</HIDDEN> " : ""
-        cmd << "ssh #{ssh[:user]}@#{ssh[:server]}"
+        ssh[:title] ||= "#{ssh[:user]}@#{ssh[:server]}"
 
-        "openterm".run "--title", ssh[:title], "--cmd", cmd
+        cmd = []
+        cmd += ["sshpass", "-p", "H-#{ssh[:pwd]}-H"] if ssh[:pwd]
+        cmd += ["ssh", "#{ssh[:user]}@#{ssh[:server]}"]
+
+        openterm cmd, title: ssh[:title]
       end
     else
       true
     end
   },
   -> {
-    "openterm".run "--title", "sysmon", "--cmd", "tmuxinator", "start", "sysmon",
-                   "--no-tmux"
+    "tmuxinator".run "stop", "sysmon"
+    openterm %w(tmuxinator start sysmon), title: :sysmon, tmux: false
   }
 ].do_all
 

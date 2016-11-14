@@ -12,24 +12,35 @@ options = parse_args do |parser, options|
   end
 end
 
-term  = config[:term]
+term = config[:term]
+if term == "urxvtc" && !"urxvtd".is_running
+  term = "urxvt"
+end
+
 if options.has_key? :tmux
   tmux = options[:tmux]
 else
   tmux = config[:tmux]
 end
-title = options[:title] || ("a".."z").to_a.shuffle[0,8].join
-cmd   = options[:cmd]
+
+if options[:title].nil? || options[:title].empty?
+  title = ("a".."z").to_a.shuffle[0,8].join
+else
+  title = options[:title]
+end
+
+cmd = options[:cmd]
+
+title.gsub! /[@.]/, "-"
+
+ENV.delete "TMUX"
 
 args  = []
 args += ["-title", title]
 args += ["-e", "zsh", "-i"]
-args += ["-c", "tmux new-session -s #{title} #{cmd}"] if  cmd &&  tmux
-args += ["-c", "tmux new-session -s #{title}"       ] if !cmd &&  tmux
-args += ["-c", cmd                                  ] if  cmd && !tmux
-
-puts term
-puts args
+args += ["-c", "tmux new-session -s #{title} #{cmd.escape}"] if  cmd &&  tmux
+args += ["-c", "tmux new-session -s #{title}"              ] if !cmd &&  tmux
+args += ["-c", "#{cmd}"                                    ] if  cmd && !tmux
 
 term.run(*args)
 
