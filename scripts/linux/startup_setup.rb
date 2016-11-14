@@ -58,37 +58,37 @@ options = parse_args
   },
   -> {
     if config[:weechat]
-      "openterm".run "--title", "weechat", "--cmd", "weechat", detached: true
+      "openterm".run "--title", "weechat", "--cmd", "weechat"
     else
       true
     end
   },
   -> {
     if config[:mutt]
-      "openterm".run "--title", "mutt", "--cmd", "mutt", detached: true
+      "openterm".run "--title", "mutt", "--cmd", "mutt"
     else
       true
     end
   },
   -> {
     if config[:turses]
-      "openterm".run "--title", "turses", "--cmd", "turses", detached: true
+      "openterm".run "--title", "turses", "--cmd", "turses"
     else
       true
     end
   },
   -> {
-    "openterm".run "--title", "task", "--cmd", "task sync && task list", detached: true
+    "openterm".run "--title", "task"
   },
   -> {
     if config[:ssh]
       config[:ssh].each do |ssh|
         ssh[:pwd].as_pwd!
-        ssh[:title] ||= "#{ssh[:user]}@#{ssh[:server]}"
+        ssh[:title] ||= "#{ssh[:user]}-#{ssh[:server]}"
         cmd  = ssh[:pwd] ? "sshpass -p <HIDDEN>#{ssh[:pwd]}</HIDDEN> " : ""
         cmd << "ssh #{ssh[:user]}@#{ssh[:server]}"
 
-        "openterm".run "--title", ssh[:title], "--cmd", cmd, detached: true
+        "openterm".run "--title", ssh[:title], "--cmd", cmd
       end
     else
       true
@@ -96,7 +96,7 @@ options = parse_args
   },
   -> {
     "openterm".run "--title", "sysmon", "--cmd", "tmuxinator", "start", "sysmon",
-                   "--no-tmux", detached: true
+                   "--no-tmux"
   }
 ].do_all
 

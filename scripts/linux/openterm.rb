@@ -28,6 +28,9 @@ args += ["-c", "tmux new-session -s #{title} #{cmd}"] if  cmd &&  tmux
 args += ["-c", "tmux new-session -s #{title}"       ] if !cmd &&  tmux
 args += ["-c", cmd                                  ] if  cmd && !tmux
 
+puts term
+puts args
+
 term.run(*args)
 
 

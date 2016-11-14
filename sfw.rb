@@ -196,12 +196,19 @@ module Shortcuts
       "command `#{pretty_cmd.as_tok}` is already running".pinf
       status = true
     else
+      cmd << " 2>&1"
       cmd << " &" if detached
 
       _run = lambda do |cmd|
-        res = `#{cmd} 2>&1`
-        output.write(res) if !quiet
-        status = $?.success?
+        begin
+          puts cmd
+          res = `#{cmd}`
+          output.write(res) if !quiet
+          status = $?.success?
+        rescue Interrupt
+          "interrupted while running command `#{pretty_cmd.as_tok}`".pwrn
+          status = false
+        end
       end
 
       if dir
