@@ -2,32 +2,6 @@ config = "startup_setup".get_config
 
 options = parse_args
 
-
-def lpass_logged_in?
-  "lpass".run("status", verbose: false, quiet: true)
-end
-
-def lpass_sync
-  "lpass".run "sync"
-end
-
-def lpass_login(user)
-  "lpass".run "login", user
-end
-
-def openterm(cmd, title: nil, tmux: true)
-  args  = []
-  args += ["--title", title]
-  args += [tmux ? "--tmux" : "--no-tmux"]
-  unless cmd.empty?
-    args << "--cmd"
-    args << Array(cmd).map { |e| e.escape }.join(" ")
-  end
-
-  "openterm".run *args
-end
-
-
 [ -> {
     if config[:lastpass]
       status = unless lpass_logged_in?

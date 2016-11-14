@@ -135,7 +135,7 @@ module Shortcuts
 
   def as_pwd(**run_args)
     case self.to_s
-    when /^lpass:(?<id>.+)$/ then Regexp.last_match(:id).lpass_show_pwd(**run_args)
+    when /^lpass:(?<id>.+)$/ then lpass_show_pwd(Regexp.last_match(:id), **run_args)
     else self
     end.dup
   end
@@ -143,8 +143,6 @@ module Shortcuts
   # }}}
 
   # {{{ execution
-
-  # {{{ specific programs
 
   def capture(*args, **run_args)
     program_name = self.to_s
@@ -157,12 +155,6 @@ module Shortcuts
       ""
     end
   end
-
-  def lpass_show_pwd(**run_args)
-    "lpass".capture "show", "--pass", "H-#{self.to_s}-H", **run_args
-  end
-
-  # }}}
 
   def check_program
     find_executable0(self.to_s)
@@ -504,3 +496,35 @@ def parse_args(simulate_enabled: true)
   end.parse!
   options
 end
+
+# {{{ specific programs
+
+def lpass_logged_in?
+  "lpass".run("status", verbose: false, quiet: true)
+end
+
+def lpass_sync
+  "lpass".run "sync"
+end
+
+def lpass_login(user)
+  "lpass".run "login", user
+end
+
+def lpass_show_pwd(id, **run_args)
+  "lpass".capture "show", "--pass", "H-#{id.to_s}-H", **run_args
+end
+
+def openterm(cmd, title: nil, tmux: true)
+  args  = []
+  args += ["--title", title]
+  args += [tmux ? "--tmux" : "--no-tmux"]
+  unless cmd.empty?
+    args << "--cmd"
+    args << Array(cmd).map { |e| e.escape }.join(" ")
+  end
+
+  "openterm".run *args
+end
+
+# }}}
