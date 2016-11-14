@@ -96,7 +96,7 @@ options = parse_args
     end
   },
   -> {
-    "tmuxinator".run "stop", "sysmon"
+    "tmuxinator".run "stop", "sysmon", quiet: true, ignore_status: true
     openterm %w(tmuxinator start sysmon), title: :sysmon, tmux: false
   }
 ].do_all
