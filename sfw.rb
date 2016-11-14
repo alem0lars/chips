@@ -330,27 +330,14 @@ module Shortcuts
 
 end
 
-class String
-
-  include Shortcuts
-
-end
-
-class Symbol
-
-  include Shortcuts
-
-end
-
-class Pathname
-
-  include Shortcuts
-
-end
+# include the defined shortcuts
+class String   include Shortcuts end
+class Symbol   include Shortcuts end
+class Pathname include Shortcuts end
+class Array    include Shortcuts end
+class Hash     include Shortcuts end
 
 class Array
-
-  include Shortcuts
 
   def do_all
     status = true
@@ -371,17 +358,15 @@ end
 
 class Hash
 
-  include Shortcuts
-
-  # Extract `n` sample key/value pairs from the underlying `Hash`.
+  # extract `n` sample key/value pairs from the underlying `Hash`
   def sample(n=1)
     Hash[self.to_a.sample(n)]
   end
 
-  # Perform recursive merge of the current `Hash` (`self`) with the provided one
-  # (the `second` argument).
+  # perform recursive merge of the current `Hash` (`self`) with the provided one
+  # (the `second` argument)
   #
-  # The merge have knows how to recurse in both `Hash`es and `Array`s.
+  # the merge have knows how to recurse in both `Hash`es and `Array`s
   def deep_merge(second)
     merger = proc do |key, v1, v2|
       if Hash === v1 && Hash === v2
@@ -406,34 +391,34 @@ class Hash
     self.select{|k, _| keys.include?(k)}
   end
 
-  # Return a new `Hash` with all keys converted to `String`s.
+  # return a new `Hash` with all keys converted to `String`s
   def deep_stringify_keys
     deep_transform_keys{ |key| key.to_s }
   end
 
-  # Destructively convert all keys to `String`s.
+  # destructively convert all keys to `String`s
   def deep_stringify_keys!
     deep_transform_keys!{ |key| key.to_s }
   end
 
-  # Return a new `Hash` with all keys converted to `Symbol`s, as long as they
-  # respond to `to_sym`.
+  # return a new `Hash` with all keys converted to `Symbol`s, as long as they
+  # respond to `to_sym`
   def deep_symbolize_keys
     deep_transform_keys{ |key| key.to_sym rescue key }
   end
 
-  # Destructively convert all keys to `Symbol`s, as long as they respond to
-  # `to_sym`.
+  # destructively convert all keys to `Symbol`s, as long as they respond to
+  # `to_sym`
   def deep_symbolize_keys!
     deep_transform_keys!{ |key| key.to_sym rescue key }
   end
 
-  # Return a new `Hash` with all keys converted by the block operation.
+  # return a new `Hash` with all keys converted by the block operation
   def deep_transform_keys(&block)
     deep_transform_keys_in_object(self, &block)
   end
 
-  # Destructively convert all keys by using the block operation.
+  # destructively convert all keys by using the block operation
   def deep_transform_keys!(&block)
     deep_transform_keys_in_object!(self, &block)
   end
@@ -467,6 +452,7 @@ class Hash
   private :deep_transform_keys_in_object!
 end
 
+# ensure the current process is running as `root`
 def ensure_root
   if !(Process.euid == 0)
     "the script needs root privileges".perr exit_code: -1
@@ -477,6 +463,7 @@ def uname
   `uname -r`
 end
 
+# parse commandline arguments
 def parse_args(simulate_enabled: true)
   options = {}
   OptionParser.new do |parser|
@@ -497,7 +484,7 @@ def parse_args(simulate_enabled: true)
   options
 end
 
-# {{{ specific programs
+# {{{ specific programs support
 
 def lpass_logged_in?
   "lpass".run("status", verbose: false, quiet: true)
