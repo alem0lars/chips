@@ -198,12 +198,12 @@ module Shortcuts
           status = if detached
             fork do
               res = `#{cmd}`
-              output.write(`#{cmd}`) unless quiet
+              output.write(res) unless quiet
             end
             true
           else
             res = `#{cmd}`
-            output.write(`#{cmd}`) unless quiet
+            output.write(res) unless quiet
             $?.success?
           end
         rescue Interrupt

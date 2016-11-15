@@ -13,7 +13,7 @@ options = parse_args do |parser, options|
 end
 
 term = config[:term]
-if term == "urxvtc" && !"urxvtd".is_running
+if term == "urxvtc" && !"urxvtd".is_running # fallback when no daemon is avail
   term = "urxvt"
 end
 
