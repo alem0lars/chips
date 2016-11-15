@@ -506,7 +506,7 @@ def openterm(cmd, title: nil, tmux: true)
   args  = []
   args += ["--title", title]
   args += [tmux ? "--tmux" : "--no-tmux"]
-  if cmd.nil? || cmd.empty?
+  unless cmd.nil? || cmd.empty?
     args << "--cmd"
     args << Array(cmd).map { |e| e.escape }.join(" ")
   end
