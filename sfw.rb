@@ -1,7 +1,7 @@
 require "fileutils"
 require "json"
 require "mkmf"
-require "optionparser"
+require "optparse"
 require "pathname"
 require "shellwords"
 
@@ -331,11 +331,11 @@ module Shortcuts
 end
 
 # include the defined shortcuts
-class String   include Shortcuts end
-class Symbol   include Shortcuts end
-class Pathname include Shortcuts end
-class Array    include Shortcuts end
-class Hash     include Shortcuts end
+class String;   include Shortcuts end
+class Symbol;   include Shortcuts end
+class Pathname; include Shortcuts end
+class Array;    include Shortcuts end
+class Hash;     include Shortcuts end
 
 class Array
 
