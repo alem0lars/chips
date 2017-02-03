@@ -4,6 +4,9 @@ require "mkmf"
 require "optparse"
 require "pathname"
 require "shellwords"
+require "open-uri"
+require "net/http"
+require "yaml"
 
 MakeMakefile::Logging.instance_variable_set(:@logfile, File::NULL)
 
@@ -68,23 +71,23 @@ module Shortcuts
     answer = gets.chomp
 
     case type
-      when :bool
-        if answer =~ /(y|ye|yes|yeah|ofc)$/i
-          true
-        elsif answer =~ /(n|no|fuck|fuck\s+you|fuck\s+off)$/i
-          false
-        else
-          "answer misunderstood".pwrn
-          ask question, type: type
-        end
-      when :string
-        if answer.empty?
-          "empty answer".pwrn
-          ask question, type: type
-        else
-          answer
-        end
-      else "unhandled question type: `#{type}`".perr
+    when :bool
+      if answer =~ /(y|ye|yes|yeah|ofc)$/i
+        true
+      elsif answer =~ /(n|no|fuck|fuck\s+you|fuck\s+off)$/i
+        false
+      else
+        "answer misunderstood".pwrn
+        ask question, type: type
+      end
+    when :string
+      if answer.empty?
+        "empty answer".pwrn
+        ask question, type: type
+      else
+        answer
+      end
+    else "unhandled question type: `#{type}`".perr
     end
   end
 
@@ -191,21 +194,21 @@ module Shortcuts
       "command `#{pretty_cmd.as_tok}` is already running".pinf
       status = true
     else
-      _run = lambda do |cmd|
-        cmd << " 2>&1"
+      _run = lambda do |run_cmd|
+        run_cmd << " 2>&1"
 
         begin
           status = if detached
-            fork do
-              res = `#{cmd}`
-              output.write(res) unless quiet
-            end
-            true
-          else
-            res = `#{cmd}`
-            output.write(res) unless quiet
-            $?.success?
-          end
+                     fork do
+                       res = `#{run_cmd}`
+                       output.write(res) unless quiet
+                     end
+                     true
+                   else
+                     res = `#{run_cmd}`
+                     output.write(res) unless quiet
+                     $?.success?
+                   end
         rescue Interrupt
           status = false
         end
@@ -269,7 +272,7 @@ module Shortcuts
     config.merge!(avail_config_paths.each_with_object({}) do |config_path, hash|
       begin
         hash.merge!(JSON.parse(config_path.read)) if config_path.readable?
-      rescue JSON::ParserError => err
+      rescue JSON::ParserError => _
         "skipping invalid config at `#{config.as_tok}`".pwrn
       end
     end)
@@ -278,7 +281,7 @@ module Shortcuts
     if ENV.has_key?(env_var_name)
       begin
         config.merge!(JSON.parse(ENV[env_var_name]))
-      rescue JSON::ParserError => err
+      rescue JSON::ParserError => _
         "skipping invalid config in the environment variable `#{env_var_name.as_tok}`".pwrn
       end
     end
@@ -298,29 +301,55 @@ module Shortcuts
 
     return "invalid script: not a valid file".perr unless script_path.file?
 
-    "building script `#{script_path.as_tok}`".pinf
-
-    script_data = script_path.read
-    if script_path.extname == ".rb"
-      hashbang    = "#!/usr/bin/env ruby"
-      separator   = "# entry-point"
-      sfw_data    = __FILE__.to_pn.read
-      dst_data    = "#{hashbang}\n\n#{sfw_data}\n\n#{separator}\n#{script_data}"
-    else
-      dst_data = script_data
-    end
-
-    "script successfully built".psuc
-
-    perms = "555"
-    if simulate
-      if dst_path
-        "wrote to `#{dst_path.as_tok}` (perms: #{perms.as_tok})".simulated.pinf
+    if %w(.yml .yaml).include? script_path.extname
+      # TODO make checks about correctness of information provided
+      data = YAML.load_file(script_path).deep_symbolize_keys
+      if data.has_key? :download
+        data[:download].each do |name, url|
+          "downloading script `#{url.as_tok}`".pinf
+          begin
+            data = download(url)
+          rescue ArgumentError => err # TODO add right errors
+            return "failed to download `#{url.as_tok}`: #{err.message.as_tok}".perr
+          end
+          if dst_path.directory?
+            dst_dir_path = dst_path
+          else
+            if dst_path.dirname.directory?
+              dst_dir_path = dst_path.dirname
+            else
+              return "invalid destination path `#{to.as_tok}`".perr
+            end
+          end
+          IO.copy_stream(data, dst_dir_path.join(name.to_s))
+          "script successfully downloaded".psuc
+        end
       end
     else
-      dst_path.delete if dst_path.file?
-      dst_path.write dst_data if dst_path
-      dst_path.chperms perms
+      "building script `#{script_path.as_tok}`".pinf
+
+      script_data = script_path.read
+      if script_path.extname == ".rb"
+        hashbang    = "#!/usr/bin/env ruby"
+        separator   = "# entry-point"
+        sfw_data    = __FILE__.to_pn.read
+        dst_data    = "#{hashbang}\n\n#{sfw_data}\n\n#{separator}\n#{script_data}"
+      else
+        dst_data = script_data
+      end
+
+      "script successfully built".psuc
+
+      perms = "555"
+      if simulate
+        if dst_path
+          "wrote to `#{dst_path.as_tok}` (perms: #{perms.as_tok})".simulated.pinf
+        end
+      else
+        dst_path.delete if dst_path.file?
+        dst_path.write dst_data if dst_path
+        dst_path.chperms perms
+      end
     end
 
     return dst_data
@@ -328,6 +357,46 @@ module Shortcuts
 
   # }}}
 
+end
+
+# TODO add right errors
+
+Error = Class.new(StandardError)
+
+DOWNLOAD_ERRORS = [
+  SocketError,
+  OpenURI::HTTPError,
+  RuntimeError,
+  URI::InvalidURIError,
+  Error,
+]
+
+def download(url, max_size: nil)
+  url = URI.encode(URI.decode(url))
+  url = URI(url)
+  raise Error, "url was invalid" if !url.respond_to?(:open)
+
+  options = {}
+  options["User-Agent"] = "MyApp/1.2.3"
+  options[:content_length_proc] = ->(size) {
+    if max_size && size && size > max_size
+      raise Error, "file is too big (max is #{max_size})"
+    end
+  }
+
+  downloaded_file = url.open(options)
+
+  if downloaded_file.is_a?(StringIO)
+    tempfile = Tempfile.new(basename, binmode: true)
+    IO.copy_stream(downloaded_file, tempfile.path)
+    downloaded_file = tempfile
+    OpenURI::Meta.init downloaded_file, stringio
+  end
+
+  downloaded_file
+rescue *DOWNLOAD_ERRORS => error
+  raise if error.instance_of?(RuntimeError) && error.message !~ /redirection/
+  raise Error, "download failed (#{url}): #{error.message}"
 end
 
 # include the defined shortcuts
@@ -425,28 +494,28 @@ class Hash
 
   def deep_transform_keys_in_object(object, &block)
     case object
-      when Hash
-        object.each_with_object({}) do |(key, value), result|
-          result[yield(key)] = deep_transform_keys_in_object(value, &block)
-        end
-      when Array
-        object.map {|e| deep_transform_keys_in_object(e, &block)}
-      else object
+    when Hash
+      object.each_with_object({}) do |(key, value), result|
+        result[yield(key)] = deep_transform_keys_in_object(value, &block)
+      end
+    when Array
+      object.map {|e| deep_transform_keys_in_object(e, &block)}
+    else object
     end
   end
   private :deep_transform_keys_in_object
 
   def deep_transform_keys_in_object!(object, &block)
     case object
-      when Hash
-        object.keys.each do |key|
-          value = object.delete(key)
-          object[yield(key)] = deep_transform_keys_in_object!(value, &block)
-        end
-        object
-      when Array
-        object.map! {|e| deep_transform_keys_in_object!(e, &block)}
-      else object
+    when Hash
+      object.keys.each do |key|
+        value = object.delete(key)
+        object[yield(key)] = deep_transform_keys_in_object!(value, &block)
+      end
+      object
+    when Array
+      object.map! {|e| deep_transform_keys_in_object!(e, &block)}
+    else object
     end
   end
   private :deep_transform_keys_in_object!
@@ -511,7 +580,7 @@ def openterm(cmd, title: nil, tmux: true)
     args << Array(cmd).map { |e| e.escape }.join(" ")
   end
 
-  "openterm".run *args
+  "openterm".run(*args)
 end
 
 # }}}

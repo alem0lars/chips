@@ -26,18 +26,20 @@ categories = Pathname.glob(SCRIPTS_DIR.join("*")).map do |category_path|
   category_path.basename.to_s
 end
 
-options = parse_args do |parser, options|
-  parser.on("-c", "--categories x,y,z", Array, "Categories to include") do |cat|
-    options[:categories] = cat
+options = parse_args do |parser, opts|
+  parser.on("-c", "--categories x,y,z", Array, "categories to include") do |cat|
+    opts[:categories] = cat
   end
 end
 
 selected_categories = if options[:categories]
-  options[:categories]
-else
-  "asking for selected categories..".pinf
-  categories.select { |category| "include #{category}".ask type: :bool }
-end
+                        options[:categories]
+                      else
+                        "asking for selected categories..".pinf
+                        categories.select do |category|
+                          "include #{category}".ask type: :bool
+                        end
+                      end
 
 ensure_root unless $simulate
 
