@@ -298,6 +298,7 @@ module Shortcuts
 
     script_path = self.to_s.to_pn
     dst_path = to.to_s.to_pn unless to.nil?
+    perms = "555"
 
     return "invalid script: not a valid file".perr unless script_path.file?
 
@@ -306,7 +307,7 @@ module Shortcuts
       data = YAML.load_file(script_path).deep_symbolize_keys
       if data.has_key? :download
         data[:download].each do |name, url|
-          "downloading script `#{url.as_tok}`".pinf
+          "downloading script `#{name.as_tok}` from `#{url.as_tok}`".pinf
           begin
             data = download(url)
           rescue ArgumentError => err # TODO add right errors
@@ -321,8 +322,19 @@ module Shortcuts
               return "invalid destination path `#{to.as_tok}`".perr
             end
           end
-          IO.copy_stream(data, dst_dir_path.join(name.to_s))
+
           "script successfully downloaded".psuc
+
+          dst_script_path = dst_dir_path.join(name.to_s)
+          if simulate
+            "wrote to `#{dst_script_path.as_tok}` (perms: #{perms.as_tok})".simulated.pinf
+          else
+            dst_script_path.delete if dst_script_path.file?
+            IO.copy_stream(data, dst_script_path)
+            dst_path.chperms perms
+          end
+
+          "script successfully installed".psuc
         end
       end
     else
@@ -350,6 +362,8 @@ module Shortcuts
         dst_path.write dst_data if dst_path
         dst_path.chperms perms
       end
+
+      "script successfully installed".psuc
     end
 
     return dst_data
