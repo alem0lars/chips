@@ -4,13 +4,13 @@ options = parse_args
 
 [ -> {
     if config[:taffybar]
-      "taffybar".run
+      "taffybar".run detached: true, single: true
     else
       true
     end
   }, -> {
     if config[:lastpass]
-      status = unless lpass_logged_in?
+      unless lpass_logged_in?
         [ -> { lpass_login config[:lastpass][:user] },
           -> { lpass_sync }
         ].do_all
