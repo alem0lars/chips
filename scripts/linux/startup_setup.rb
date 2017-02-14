@@ -5,6 +5,8 @@ options = parse_args
 [ -> {
     if config[:taffybar]
       "taffybar".run
+    else
+      true
     end
   }, -> {
     if config[:lastpass]
