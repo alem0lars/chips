@@ -3,6 +3,10 @@ config = "startup_setup".get_config
 options = parse_args
 
 [ -> {
+    if config[:taffybar]
+      "taffybar".run
+    end
+  }, -> {
     if config[:lastpass]
       status = unless lpass_logged_in?
         [ -> { lpass_login config[:lastpass][:user] },
