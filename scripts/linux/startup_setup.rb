@@ -34,19 +34,7 @@ options = parse_args
   },
   -> {
     if config[:mega]
-      config[:mega].each do |e|
-        e[:pwd].as_pwd!
-        args = [
-          "-r", "/Root".to_pn.join(e[:remote]),
-          "-l", e[:local],
-          "-u", e[:user],
-          "-p", "H-#{e[:pwd]}-H"
-        ]
-        kwargs = { quiet: true, ignore_status: true }
-
-        "megacopy".run "--reload", "--download", *args, **kwargs
-        "megacopy".run "--reload",               *args, **kwargs
-      end
+      "megasync".run detached: true, single: true
     else
       true
     end
