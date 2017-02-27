@@ -3,6 +3,12 @@ config = "startup_setup".get_config
 options = parse_args
 
 [ -> {
+    if config[:redshift]
+      "redshift".run detached: true, single: true
+    else
+      true
+    end
+  }, -> {
     if config[:taffybar]
       "taffybar".run detached: true, single: true
     else
