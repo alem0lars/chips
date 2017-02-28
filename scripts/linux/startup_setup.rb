@@ -57,7 +57,7 @@ options = parse_args
   },
   -> {
     if config[:weechat]
-      openterm %w(weechat), title: :weechat, tmux: false
+      openterm %w(weechat), title: :weechat
     else
       true
     end
