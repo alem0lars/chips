@@ -1,14 +1,26 @@
+require "erb"
 require "fileutils"
 require "json"
 require "mkmf"
+require "net/http"
+require "open-uri"
 require "optparse"
+require "ostruct"
 require "pathname"
 require "shellwords"
-require "open-uri"
-require "net/http"
 require "yaml"
 
 MakeMakefile::Logging.instance_variable_set(:@logfile, File::NULL)
+
+# {{{ utils
+
+class ErbRenderer < OpenStruct
+  def render(template)
+    ERB.new(template).result(binding)
+  end
+end
+
+# }}}
 
 module Shortcuts
 
@@ -141,6 +153,11 @@ module Shortcuts
     when /^lpass:(?<id>.+)$/ then lpass_show_pwd(Regexp.last_match(:id), **run_args)
     else self
     end.dup
+  end
+
+  # TODO test erb_render
+  def erb_render(data)
+    ErbRenderer.new(data).render(self.to_s)
   end
 
   # }}}

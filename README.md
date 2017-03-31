@@ -24,3 +24,11 @@ Chips are divided by category:
 * [`gentoo`](./scripts/gentoo): Chips specific for `Gentoo`-based systems.
 * [`osx`](./scripts/osx): Chips specific for `OSX`.
 * [`jee`](./scripts/jee): Chips for `Java Enterprise Edition`.
+
+## Development
+
+Setup:
+
+```
+$ bundle install
+```
