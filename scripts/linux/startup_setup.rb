@@ -3,7 +3,7 @@ config = "startup_setup".get_config
 options = parse_args
 
 [ -> {
-    if config[:redshift]
+    if config[:dunst]
       "dunst".run detached: true, single: true
     else
       true
