@@ -49,13 +49,14 @@ unless options[:setup_name]
   setup_name = "select the setup (available: `#{setups_info.keys}`)".ask
 end
 setup_name = setup_name.to_sym
+"invalid setup name".perr exit_code: -3 unless setups_info.has_key? setup_name
 setup_info = setups_info[setup_name]
 "using setup `#{setup_name.as_tok}`: `#{setup_info.as_tok}`".pinf
 unless monitors_by_role(setup_info, ALLOWED_ROLES)
   "invalid role detected".perr(exit_code: -2)
 end
 unless monitors_by_role(setup_info, :internal).length == 1
-  "exactly one internal monitor is needed".perr(exit_code: -3)
+  "exactly one internal monitor is needed".perr exit_code: -3
 end
 # 3. perform monitors setup
 internal_monitor_name, _ = monitors_by_role(setup_info, :internal).first

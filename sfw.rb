@@ -90,12 +90,12 @@ module Shortcuts
         false
       else
         "answer misunderstood".pwrn
-        ask question, type: type
+        question.ask type: type
       end
     when :string
       if answer.empty?
         "empty answer".pwrn
-        ask question, type: type
+        question.ask type: type
       else
         answer
       end
