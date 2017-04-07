@@ -4,6 +4,12 @@ options = parse_args
 
 [ -> {
     if config[:redshift]
+      "dunst".run detached: true, single: true
+    else
+      true
+    end
+  }, -> {
+    if config[:redshift]
       "redshift".run detached: true, single: true
     else
       true
