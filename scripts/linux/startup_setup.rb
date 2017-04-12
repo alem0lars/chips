@@ -1,6 +1,6 @@
 config = "startup_setup".get_config
 
-options = parse_args
+_options = parse_args
 
 [ -> {
     if config[:dunst]
@@ -8,19 +8,22 @@ options = parse_args
     else
       true
     end
-  }, -> {
+  },
+  -> {
     if config[:redshift]
       "redshift".run detached: true, single: true
     else
       true
     end
-  }, -> {
+  },
+  -> {
     if config[:taffybar]
       "taffybar".run detached: true, single: true
     else
       true
     end
-  }, -> {
+  },
+  -> {
     if config[:lastpass]
       unless lpass_logged_in?
         [ -> { lpass_login config[:lastpass][:user] },
@@ -32,7 +35,8 @@ options = parse_args
     else
       true
     end
-  }, -> {
+  },
+  -> {
     ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
     if File.file?(ssh_key)
       unless "ssh-add".capture("-l").split("\n").any? { |e| e.split(/\s+/)[2] == ssh_key.to_s }
@@ -57,6 +61,13 @@ options = parse_args
   -> {
     if config[:copyq]
       "copyq".run detached: true, single: true
+    else
+      true
+    end
+  },
+  -> {
+    if config[:slack]
+      "slack".run detached: true, single: true
     else
       true
     end
