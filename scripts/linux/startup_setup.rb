@@ -66,6 +66,13 @@ _options = parse_args
     end
   },
   -> {
+    if config[:thunderbird]
+      "thunderbird".run detached: true, single: true
+    else
+      true
+    end
+  },
+  -> {
     if config[:slack]
       "slack".run detached: true, single: true
     else
