@@ -3,6 +3,11 @@ config = "startup_setup".get_config
 _options = parse_args
 
 [ -> {
+    if config[:feh]
+      "feh".run "--no-fehbg", "--image-bg", "black", "--bg-max", config[:feh][:path].shell_escape
+    end
+  },
+  -> {
     if config[:dunst]
       "dunst".run detached: true, single: true
     else

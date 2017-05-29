@@ -1,2 +1,2 @@
 download:
-  nvr: https://raw.githubusercontent.com/mhinz/neovim-remote/master/bin/nvr
+  nvr: https://raw.githubusercontent.com/mhinz/neovim-remote/master/nvr/nvr.py
