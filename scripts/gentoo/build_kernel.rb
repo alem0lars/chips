@@ -14,7 +14,6 @@ options = parse_args do |parser, options|
   end
 end
 options[:kernel_dir] = kernel_parent_dir.join(options[:kernel_name] || "linux").realpath
-puts options[:kernel_dir]
 options[:kernel_name] = options[:kernel_dir].basename.gsub "linux-", ""
 
 boot_dir   = "/boot".to_pn
