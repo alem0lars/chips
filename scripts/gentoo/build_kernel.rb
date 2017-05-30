@@ -13,14 +13,16 @@ options = parse_args do |parser, options|
     options[:kernel_name] = kernel
   end
 end
+options[:kernel_dir] = kernel_parent_dir.join(options[:kernel_name] || "linux").realpath
+puts options[:kernel_dir]
+options[:kernel_name] = options[:kernel_dir].basename.gsub "linux-", ""
 
-kernel_dir = kernel_parent_dir.join(options[:kernel_name] || "linux")
 boot_dir   = "/boot".to_pn
 
-[ -> { "make".run dir: kernel_dir, msg: "compiling.." },
-  -> { "make".run "modules_install", dir: kernel_dir, msg: "installing kernel modules.." },
-  -> { "make".run "install", dir: kernel_dir, msg: "installing kernel image.." },
-  -> { "dracut".run "--force", boot_dir.join("initrd-#{uname}"), msg: "generating the initramfs.." }
+[ -> { "make".run dir: options[:kernel_dir], msg: "compiling.." },
+  -> { "make".run "modules_install", dir: options[:kernel_dir], msg: "installing kernel modules.." },
+  -> { "make".run "install", dir: options[:kernel_dir], msg: "installing kernel image.." },
+  -> { "dracut".run "--force", boot_dir.join("initrd-#{options[:kernel_name]}"), msg: "generating the initramfs.." }
 ].do_all
 
 

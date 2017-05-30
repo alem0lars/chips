@@ -552,6 +552,12 @@ class Hash
   private :deep_transform_keys_in_object!
 end
 
+class Pathname
+  def gsub(pattern, replacement, &block)
+    Pathname.new(self.to_s.gsub(pattern, replacement, &block))
+  end
+end
+
 # ensure the current process is running as `root`
 def ensure_root
   if !(Process.euid == 0)
