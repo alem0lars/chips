@@ -2,7 +2,10 @@ config = "startup_setup".get_config
 
 _options = parse_args
 
-[ -> {
+[ -> { "start-pulseaudio-x11".run single: true },
+  -> { "unclutter".run "-root", detached: true, single: true },
+  -> { "urxvtd".run detached: true, single: true },
+  -> {
     if config[:feh]
       "feh".run "--no-fehbg", "--image-bg", "black", "--bg-max", config[:feh][:path].escape
     end
@@ -60,9 +63,6 @@ _options = parse_args
       true
     end
   },
-  -> { "unclutter".run "-root", detached: true, single: true },
-  -> { "start-pulseaudio-x11".run single: true },
-  -> { "urxvtd".run detached: true, single: true },
   -> {
     if config[:copyq]
       "copyq".run detached: true, single: true
