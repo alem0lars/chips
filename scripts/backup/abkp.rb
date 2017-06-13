@@ -1,7 +1,5 @@
 config = "abkp".get_config
 
-_ = parse_args
-
 [ -> () { # check external requirements
     "missing program `attic`".perr exit_code: 1 unless "attic".check_program
     true
@@ -43,29 +41,51 @@ _ = parse_args
     end
     true
   },
+  -> () { # arguments normalization
+    avail_backup_names = config[:backups].map { |backup| backup[:name] }
+
+    options = parse_args do |parser, options|
+      parser.on("--only x,y,z", Array,
+                "perform only specific backups " +
+                "(available: `#{avail_backup_names}`)") do |backup_names|
+        if backup_names.all? { |bn| avail_backup_names.include?(bn) }
+          options[:backup_names] = backup_names
+        else
+          "invalid backup names".perr
+        end
+      end
+    end
+
+    config[:selected_backup_names] = options[:backup_names] || backup_names
+  },
   -> () { # perform backup
-    config[:backups].each do |backup|
-      excludes = (config[:excludes] + backup[:excludes])
-                 .compact
-                 .uniq
-                 .inject([]) { |acc, exclude| acc + ["-e", exclude] }
+    if "perform backups #{config[:selected_backup_names].as_tok}".ask type: :bool
+      config[:backups].each do |backup|
+        if config[:selected_backup_names].include? backup[:name]
+          "performing backup #{backup[:name].as_tok}".pinf
+          excludes = (config[:excludes] + backup[:excludes])
+                     .compact
+                     .uniq
+                     .inject([]) { |acc, exclude| acc + ["-e", exclude] }
 
-      repo = "#{config[:remote][:username]}@#{config[:remote][:host]}:#{backup[:repo]}"
-      archive = "#{repo}::#{backup[:archive_name]}"
+          repo = "#{config[:remote][:username]}@#{config[:remote][:host]}:#{backup[:repo]}"
+          archive = "#{repo}::#{backup[:archive_name]}"
 
-      keep = backup[:keep].deep_merge(config[:keep])
+          keep = backup[:keep].deep_merge(config[:keep])
 
-      "attic".run "create",
-                  "--stats",
-                  archive,
-                  backup[:dir],
-                  *excludes
-      "attic".run "prune",
-                  "-v",
-                  repo,
-                  "-d", keep[:daily],
-                  "-w", keep[:weekly],
-                  "-m", keep[:monthly]
+          "attic".run "create",
+                      "--stats",
+                      archive,
+                      backup[:dir],
+                      *excludes
+          "attic".run "prune",
+                      "-v",
+                      repo,
+                      "-d", keep[:daily],
+                      "-w", keep[:weekly],
+                      "-m", keep[:monthly]
+        end
+      end
     end
     true
   }

@@ -574,7 +574,7 @@ def parse_args(simulate_enabled: true)
   options = {}
   OptionParser.new do |parser|
     if simulate_enabled
-      parser.on("-s", "--[no-]simulate", "Run in simulate mode") do |simulate|
+      parser.on("-s", "--[no-]simulate", "run in simulate mode") do |simulate|
         $simulate = options[:simulate] = simulate
         "running in `simulate` mode".pinf if $simulate
       end
@@ -582,7 +582,7 @@ def parse_args(simulate_enabled: true)
 
     yield(parser, options) if block_given?
 
-    parser.on_tail("-h", "--help", "Show this message") do
+    parser.on_tail("-h", "--help", "show this message") do
       puts parser
       exit
     end
