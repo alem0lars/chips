@@ -4,7 +4,7 @@ _options = parse_args
 
 [ -> {
     if config[:feh]
-      "feh".run "--no-fehbg", "--image-bg", "black", "--bg-max", config[:feh][:path].to_pn.shell_escape
+      "feh".run "--no-fehbg", "--image-bg", "black", "--bg-max", config[:feh][:path].escape
     end
   },
   -> {
