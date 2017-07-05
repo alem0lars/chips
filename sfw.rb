@@ -188,7 +188,8 @@ module Shortcuts
 
   def run(*args,
           dir: nil, msg: nil, verbose: true, quiet: false, simulate: false,
-          detached: false, single: false, ignore_status: false, output: $stdout)
+          detached: false, single: false, ignore_status: false, output: $stdout,
+          retry_on_error: false)
     simulate ||= $simulate
 
     program_name = self.to_s
@@ -254,6 +255,16 @@ module Shortcuts
           "command `#{pretty_cmd.as_tok}` successfully run".psuc if verbose
         else
           "command `#{pretty_cmd.as_tok}` failed to run".perr if verbose
+          if retry_on_error
+            if "retry".ask type: :bool
+              status = run(*args, dir: dir, msg: msg, verbose: verbose,
+                           quiet: quiet, simulate: simulate, detached: detached,
+                           single: single, ignore_status: ignore_status,
+                           output: output, retry_on_error: retry_on_error)
+            else
+              status = false
+            end
+          end
         end
       end
     end
