@@ -77,13 +77,16 @@ config = "abkp".get_config
                       "--stats",
                       archive,
                       backup[:dir],
-                      *excludes
+                      *excludes,
+                      retry_on_error: true
+
           "attic".run "prune",
                       "-v",
                       repo,
                       "-d", keep[:daily],
                       "-w", keep[:weekly],
-                      "-m", keep[:monthly]
+                      "-m", keep[:monthly],
+                      retry_on_error: true
         end
       end
     end
