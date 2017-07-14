@@ -56,7 +56,7 @@ config = "abkp".get_config
       end
     end
 
-    config[:selected_backup_names] = options[:backup_names] || backup_names
+    config[:selected_backup_names] = options[:backup_names] || avail_backup_names
   },
   -> () { # perform backup
     if "perform backups #{config[:selected_backup_names].as_tok}".ask type: :bool
