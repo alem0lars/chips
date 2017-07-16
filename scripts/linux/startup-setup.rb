@@ -1,37 +1,22 @@
-config = "startup_setup".get_config
+config = "startup-setup".get_config
 
 _options = parse_args
 
 [
+  # basic daemons
   -> { "start-pulseaudio-x11".run single: true },
+  -> { "redshift".run_if config[:redshift], detached: true, single: true },
   -> { "unclutter".run "-root", detached: true, single: true },
   -> { "urxvtd".run detached: true, single: true },
+  # setup desktop environment
+  -> { "dunst".run_if config[:dunst], detached: true, single: true },
+  -> { "taffybar".run_if config[:taffybar], detached: true, single: true },
   -> {
     if config[:feh]
       "feh".run "--no-fehbg", "--image-bg", "black", "--bg-max", config[:feh][:path].escape
     end
   },
-  -> {
-    if config[:dunst]
-      "dunst".run detached: true, single: true
-    else
-      true
-    end
-  },
-  -> {
-    if config[:redshift]
-      "redshift".run detached: true, single: true
-    else
-      true
-    end
-  },
-  -> {
-    if config[:taffybar]
-      "taffybar".run detached: true, single: true
-    else
-      true
-    end
-  },
+  # setup lastpass
   -> {
     if config[:lastpass]
       unless lpass_logged_in?
@@ -45,6 +30,7 @@ _options = parse_args
       true
     end
   },
+  # setup ssh
   -> {
     ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
     if File.file?(ssh_key)
@@ -57,58 +43,17 @@ _options = parse_args
       true
     end
   },
-  -> {
-    if config[:mega]
-      "megasync".run detached: true, single: true
-    else
-      true
-    end
-  },
-  -> {
-    if config[:copyq]
-      "copyq".run detached: true, single: true
-    else
-      true
-    end
-  },
-  -> {
-    if config[:thunderbird]
-      "thunderbird".run detached: true, single: true
-    else
-      true
-    end
-  },
-  -> {
-    if config[:slack]
-      "slack".run detached: true, single: true
-    else
-      true
-    end
-  },
-  -> {
-    if config[:weechat]
-      openterm %w(weechat), title: :weechat
-    else
-      true
-    end
-  },
-  -> {
-    if config[:mutt]
-      openterm %w(mutt), title: :mutt
-    else
-      true
-    end
-  },
-  -> {
-    if config[:turses]
-      openterm %w(turses), title: :turses
-    else
-      true
-    end
-  },
-  -> {
-    openterm title: :task
-  },
+  # trayer apps
+  -> { "megasync".run_if config[:mega], detached: true, single: true },
+  # standalone apps
+  -> { "copyq".run_if config[:copyq], detached: true, single: true },
+  -> { "thunderbird".run_if config[:thunderbird], detached: true, single: true },
+  -> { "slack".run config[:slack], detached: true, single: true },
+  -> { openterm %w(weechat), run_if: config[:weechat], title: :weechat },
+  -> { openterm %w(mutt), run_if: config[:mutt], title: :mutt },
+  -> { openterm %w(turses), run_if: config[:turses], title: :turses },
+  -> { openterm %w(task), title: :task },
+  # => connections to remote servers
   -> {
     if config[:ssh]
       config[:ssh].each do |ssh|
@@ -125,6 +70,9 @@ _options = parse_args
       true
     end
   },
+  # => spawn web apps
+  -> { "spawn-web-apps".run_if config[:web_apps], detached: true, single: true },
+  # => spawn pre-defined consoles
   -> {
     if config[:tmuxinator]
       "tmuxinator".run "stop", "sysmon", quiet: true, ignore_status: true

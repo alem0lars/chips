@@ -188,6 +188,14 @@ module Shortcuts
     end
   end
 
+  def run_if(condition, *args, **kwargs)
+    if condition
+      run(*args, *kwargs)
+    else
+      true
+    end
+  end
+
   def run(*args,
           dir: nil, msg: nil, verbose: true, quiet: false, simulate: false,
           detached: false, single: false, ignore_status: false, output: $stdout,
@@ -622,7 +630,7 @@ def lpass_show_pwd(id, **run_args)
   "lpass".capture "show", "--pass", "H-#{id.to_s}-H", **run_args
 end
 
-def openterm(cmd, title: nil, tmux: true)
+def openterm(cmd, run_if: true, title: nil, tmux: true)
   args  = []
   args += ["--title", title]
   args += [tmux ? "--tmux" : "--no-tmux"]
@@ -631,7 +639,12 @@ def openterm(cmd, title: nil, tmux: true)
     args << Array(cmd).map { |e| e.escape }.join(" ")
   end
 
-  "openterm".run(*args)
+  if run_if
+    "openterm".run(*args)
+  else
+    true
+  end
+
 end
 
 # }}}
