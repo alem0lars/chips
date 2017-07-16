@@ -1,10 +1,11 @@
 config = "abkp".get_config
 
-[ -> () { # check external requirements
+[
+  -> () { # check external requirements (errors: exit_code=1)
     "missing program `attic`".perr exit_code: 1 unless "attic".check_program
     true
   },
-  -> () { # config normalization
+  -> () { # config normalization (errors: exit_code=2)
     # normalize `config[:remote]`
     config[:remote] ||= {}
     config[:remote][:username] ||= ENV["USER"]
@@ -41,32 +42,32 @@ config = "abkp".get_config
     end
     true
   },
-  -> () { # arguments normalization
+  -> () { # arguments normalization (errors: exit_code=3)
     avail_backup_names = config[:backups].map { |backup| backup[:name] }
 
-    options = parse_args do |parser, options|
+    options = parse_args do |parser, opts|
       parser.on("--only x,y,z", Array,
                 "perform only specific backups " +
                 "(available: `#{avail_backup_names}`)") do |backup_names|
-        if backup_names.all? { |bn| avail_backup_names.include?(bn) }
-          options[:backup_names] = backup_names
-        else
-          "invalid backup names".perr
-        end
-      end
+                  if backup_names.all? { |bn| avail_backup_names.include?(bn) }
+                    opts[:backup_names] = backup_names
+                  else
+                    "invalid backup names".perr
+                  end
+                end
     end
 
     config[:selected_backup_names] = options[:backup_names] || avail_backup_names
   },
-  -> () { # perform backup
+  -> () { # perform backup (errors: exit_code=4)
     if "perform backups #{config[:selected_backup_names].as_tok}".ask type: :bool
       config[:backups].each do |backup|
         if config[:selected_backup_names].include? backup[:name]
           "performing backup #{backup[:name].as_tok}".pinf
           excludes = (config[:excludes] + backup[:excludes])
-                     .compact
-                     .uniq
-                     .inject([]) { |acc, exclude| acc + ["-e", exclude] }
+            .compact
+            .uniq
+            .inject([]) { |acc, exclude| acc + ["-e", exclude] }
 
           repo = "#{config[:remote][:username]}@#{config[:remote][:host]}:#{backup[:repo]}"
           archive = "#{repo}::#{backup[:archive_name]}"
@@ -74,19 +75,19 @@ config = "abkp".get_config
           keep = backup[:keep].deep_merge(config[:keep])
 
           "attic".run "create",
-                      "--stats",
-                      archive,
-                      backup[:dir],
-                      *excludes,
-                      retry_on_error: true
+            "--stats",
+            archive,
+            backup[:dir],
+            *excludes,
+            retry_on_error: true
 
           "attic".run "prune",
-                      "-v",
-                      repo,
-                      "-d", keep[:daily],
-                      "-w", keep[:weekly],
-                      "-m", keep[:monthly],
-                      retry_on_error: true
+            "-v",
+            repo,
+            "-d", keep[:daily],
+            "-w", keep[:weekly],
+            "-m", keep[:monthly],
+            retry_on_error: true
         end
       end
     end

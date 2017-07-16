@@ -10,6 +10,8 @@ require "pathname"
 require "shellwords"
 require "yaml"
 
+$exit_code = nil
+
 MakeMakefile::Logging.instance_variable_set(:@logfile, File::NULL)
 
 # {{{ utils
@@ -117,7 +119,7 @@ module Shortcuts
     return true
   end
 
-  def perr(exit_code: nil)
+  def perr(exit_code: $exit_code)
     puts self.to_s.red.prefixed(" ! ".black.bg_red)
     exit(exit_code) unless exit_code.nil?
     return false
@@ -442,6 +444,7 @@ rescue *DOWNLOAD_ERRORS => error
 end
 
 # include the defined shortcuts
+class Fixnum;   include Shortcuts end
 class String;   include Shortcuts end
 class Symbol;   include Shortcuts end
 class Pathname; include Shortcuts end
@@ -572,7 +575,7 @@ end
 # ensure the current process is running as `root`
 def ensure_root
   if !(Process.euid == 0)
-    "the script needs root privileges".perr exit_code: -1
+    "the script needs root privileges".perr exit_code: 255
   end
 end
 

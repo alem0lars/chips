@@ -2,7 +2,8 @@ config = "startup_setup".get_config
 
 _options = parse_args
 
-[ -> { "start-pulseaudio-x11".run single: true },
+[
+  -> { "start-pulseaudio-x11".run single: true },
   -> { "unclutter".run "-root", detached: true, single: true },
   -> { "urxvtd".run detached: true, single: true },
   -> {
