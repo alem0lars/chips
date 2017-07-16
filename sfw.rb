@@ -190,7 +190,7 @@ module Shortcuts
 
   def run_if(condition, *args, **kwargs)
     if condition
-      run(*args, *kwargs)
+      run(*args, **kwargs)
     else
       true
     end
