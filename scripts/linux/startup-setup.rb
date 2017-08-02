@@ -49,6 +49,7 @@ _options = parse_args
   -> { "copyq".run_if config[:copyq], detached: true, single: true },
   -> { "thunderbird".run_if config[:thunderbird], detached: true, single: true },
   -> { "slack".run config[:slack], detached: true, single: true },
+  -> { "telegram-desktop".run config[:telegram], detached: true, single: true },
   -> { openterm %w(weechat), run_if: config[:weechat], title: :weechat },
   -> { openterm %w(mutt), run_if: config[:mutt], title: :mutt },
   -> { openterm %w(turses), run_if: config[:turses], title: :turses },
