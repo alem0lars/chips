@@ -76,7 +76,7 @@ module Shortcuts
 
   # {{{ input
 
-  def ask(type: :string)
+  def ask(type: :string, allow_empty: false)
     question = self.to_s.gsub(/[?]*/, "")
     question.strip!
     question << "? "
@@ -95,7 +95,7 @@ module Shortcuts
         question.ask type: type
       end
     when :string
-      if answer.empty?
+      if !allow_empty && answer.empty?
         "empty answer".pwrn
         question.ask type: type
       else
@@ -594,7 +594,7 @@ end
 # parse commandline arguments
 def parse_args(simulate_enabled: true)
   options = {}
-  OptionParser.new do |parser|
+  parser = OptionParser.new do |parser|
     if simulate_enabled
       parser.on("-s", "--[no-]simulate", "run in simulate mode") do |simulate|
         $simulate = options[:simulate] = simulate
@@ -608,7 +608,12 @@ def parse_args(simulate_enabled: true)
       puts parser
       exit
     end
-  end.parse!
+  end
+  parser.parse!
+  options[:parser] = parser
+  def options.phelp
+    self[:parser].to_s.pinf
+  end
   options
 end
 
