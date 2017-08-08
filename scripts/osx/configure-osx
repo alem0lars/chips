@@ -18,59 +18,59 @@ PMPrintingExpandedStateForPrint = %w(
 system_configuration = proc do |c|
 
   hostname = c.ask "What's your hostname"
-  
+
   c.sysconfig msg:   "Set hostname to `#{hostname}`.",
-              name:  %w(ComputerName HostName LocalHostName), 
+              name:  %w(ComputerName HostName LocalHostName),
               value: hostname
-              
+
   c.default msg:     "Set Samba server name to `#{hostname}`.",
             domain:  "/Library/Preferences/SystemConfiguration/com.apple.smb.server",
-            name:    "NetBIOSName", 
+            name:    "NetBIOSName",
             value:   hostname,
             as_root: true
 
   c.default msg:     "Disable Spotlight indexing for any volume that gets mounted and has not yet been indexed before.",
             domain:  "/.Spotlight-V100/VolumeConfiguration",
-            name:    "Exclusions", 
+            name:    "Exclusions",
             value:   %w(/Volumes),
             as_root: true
-  
+
   c.default msg:     "Reveal IP address, hostname, OS version, etc. when clicking the clock in the login window.",
             domain:  "/Library/Preferences/com.apple.loginwindow",
-            name:    "AdminHostInfo", 
+            name:    "AdminHostInfo",
             value:   "HostName",
             as_root: true
-            
+
   c.default msg:  "Expand save panel by default.",
-            name:  NSNavPanelExpandedStateForSaveMode, 
+            name:  NSNavPanelExpandedStateForSaveMode,
             value: true
-            
+
   c.default msg:   "Expand print panel by default.",
-            name:  PMPrintingExpandedStateForPrint, 
+            name:  PMPrintingExpandedStateForPrint,
             value: true
 
   c.default msg:    "Automatically quit printer app once the print jobs complete.",
             domain: "com.apple.print.PrintingPrefs",
-            name:   "Quit When Finished", 
+            name:   "Quit When Finished",
             value:  true
 
   c.default msg:    "Disable system-wide resume.",
-            domain: "com.apple.systempreferences", 
-            name:   "NSQuitAlwaysKeepsWindows", 
+            domain: "com.apple.systempreferences",
+            name:   "NSQuitAlwaysKeepsWindows",
             value:  false
 
   c.default msg:    "Disable the crash reporter.",
-            domain: "com.apple.CrashReporter", 
-            name:   "DialogType", 
+            domain: "com.apple.CrashReporter",
+            name:   "DialogType",
             value:  "none"
-            
+
   c.default msg:     "Enable dark mode.",
             name:    "AppleInterfaceTheme",
             value:   "Dark"
 
   c.default msg:    "Set Help Viewer windows to non-floating mode.",
-            domain: "com.apple.helpviewer", 
-            name:   "DevMode", 
+            domain: "com.apple.helpviewer",
+            name:   "DevMode",
             value:  true
 
   c.syssetup msg:   "Automatically restart if the computer freezes.",
@@ -86,92 +86,92 @@ system_configuration = proc do |c|
             value: 1
 
   c.default msg:   "Always show scrollbars.",
-            name:  "AppleShowScrollBars", 
+            name:  "AppleShowScrollBars",
             value: "Always"
 
   c.default msg:   "Increase window resize speed.",
-            name:  "NSWindowResizeTime", 
+            name:  "NSWindowResizeTime",
             value: 0.001
-  
+
   c.default msg:    "Unlock debug menu in Disk Utility.",
-            domain: "com.apple.DiskUtility", 
-            name:   "DUDebugMenuEnabled", 
+            domain: "com.apple.DiskUtility",
+            name:   "DUDebugMenuEnabled",
             value:  1
 
   c.default msg:   "Save to disk, rather than iCloud, by default.",
-            name:  "NSDocumentSaveNewDocumentsToCloud", 
+            name:  "NSDocumentSaveNewDocumentsToCloud",
             value: false
-            
+
   c.default msg:    "Check for software updates daily, not just once per week.",
-            domain: "com.apple.SoftwareUpdate", 
-            name:   "ScheduleFrequency", 
+            domain: "com.apple.SoftwareUpdate",
+            name:   "ScheduleFrequency",
             value:  1
-            
+
   c.default msg:   "Enable full keyboard access for all controls (enable Tab in modal dialogs, menu windows, etc.)",
-            name:  "AppleKeyboardUIMode", 
+            name:  "AppleKeyboardUIMode",
             value: 3
-  
-  c.default msg:   "Disable smart quotes.", 
-            name:  "NSAutomaticQuoteSubstitutionEnabled", 
+
+  c.default msg:   "Disable smart quotes.",
+            name:  "NSAutomaticQuoteSubstitutionEnabled",
             value: false
-            
-  c.default msg:   "Disable smart dashes.", 
-            name:  "NSAutomaticDashSubstitutionEnabled", 
+
+  c.default msg:   "Disable smart dashes.",
+            name:  "NSAutomaticDashSubstitutionEnabled",
             value: false
-  
-  c.default msg:   "Disable auto-correct.", 
-            name:  "NSAutomaticSpellingCorrectionEnabled", 
+
+  c.default msg:   "Disable auto-correct.",
+            name:  "NSAutomaticSpellingCorrectionEnabled",
             value: false
-  
-  c.default msg:   "Set trackpad speed.", 
-            name:  "com.apple.trackpad.scaling", 
+
+  c.default msg:   "Set trackpad speed.",
+            name:  "com.apple.trackpad.scaling",
             value: 1
-            
-  c.default msg:   "Set mouse speed.", 
-            name:  "com.apple.mouse.scaling", 
+
+  c.default msg:   "Set mouse speed.",
+            name:  "com.apple.mouse.scaling",
             value: 2.5
-  
+
   c.default msg:   "Enable subpixel font rendering on non-Apple LCDs",
-            name:  "AppleFontSmoothing", 
+            name:  "AppleFontSmoothing",
             value: 2
-             
+
   c.default msg:    "Turn off keyboard illumination when computer is not used for 5 minutes.",
-            domain: "com.apple.BezelServices", 
-            name:   "kDimTime", 
+            domain: "com.apple.BezelServices",
+            name:   "kDimTime",
             value:  300
 
   c.default msg:    "Avoid creation of .DS_Store files on network volumes.",
-            domain: "com.apple.desktopservices", 
-            name:   "DSDontWriteNetworkStores", 
+            domain: "com.apple.desktopservices",
+            name:   "DSDontWriteNetworkStores",
             value:  true
 
   # {{{ Finder.
 
   c.default msg: "Disable the warning when changing a file extension.",
-            domain: "com.apple.finder", 
-            name: "FXEnableExtensionChangeWarning", 
+            domain: "com.apple.finder",
+            name: "FXEnableExtensionChangeWarning",
             value: false
-             
+
   c.default msg: "Show icons for hard drives, servers, and removable media on the desktop.",
-            domain: "com.apple.finder", 
-            name: "ShowExternalHardDrivesOnDesktop", 
+            domain: "com.apple.finder",
+            name: "ShowExternalHardDrivesOnDesktop",
             value: true
-  
+
   c.default msg: "Show status bar in Finder by default.",
-            domain: "com.apple.finder", 
-            name: "ShowStatusBar", 
+            domain: "com.apple.finder",
+            name: "ShowStatusBar",
             value: true
-             
+
   c.default msg: "Use column view in all Finder windows by default.",
-            domain: "com.apple.finder", 
-            name: "FXPreferredViewStyle", 
+            domain: "com.apple.finder",
+            name: "FXPreferredViewStyle",
             value: "Clmv"
-             
+
   c.default msg: "Allow text selection in Quick Look/Preview in Finder by default.",
-            domain: "com.apple.finder", 
-            name: "QLEnableTextSelection", 
+            domain: "com.apple.finder",
+            name: "QLEnableTextSelection",
             value: true
-  
+
   c.plist msg:  "Show item info near icons in other icon views",
           cmd:  ["Set :DesktopViewSettings:IconViewSettings:showItemInfo true",
                  "Set :StandardViewSettings:IconViewSettings:showItemInfo true",
@@ -199,7 +199,7 @@ system_configuration = proc do |c|
                  "Set :FK_StandardViewSettings:IconViewSettings:iconSize 80",
                  "Set :StandardViewSettings:IconViewSettings:iconSize 80"],
           path: "~/Library/Preferences/com.apple.finder.plist"
-  
+
   # }}}
 
   # {{{ Dock and Mission Control.
@@ -208,46 +208,46 @@ system_configuration = proc do |c|
             domain: "com.apple.dock",
             name:   "tilesize",
             value:  36
-            
+
   c.default msg:    "In Mission Control group windows by application.",
             domain: "com.apple.dock",
             name:   "expose-group-by-app",
             value:  true
-            
+
   # }}}
-  
+
   # {{{ WebBrowsers (Chrome & Safari) and WebKit.
 
   c.default msg:    "Disable universal search (don’t send search queries to Apple).",
             domain: "com.apple.Safari",
             name:   "UniversalSearchEnabled",
             value:  false
-            
+
   c.default msg:    "Disable search suggestions (don’t send search queries to Apple).",
             domain: "com.apple.Safari",
             name:   "SuppressSearchSuggestions",
             value:  true
-            
+
   c.default msg:    "Hide Safari's bookmarks bar by default.",
             domain: "com.apple.Safari",
             name:   "ShowFavoritesBar",
             value:  false
- 
+
   c.default msg:    "Hide Safari's sidebar in Top Sites.",
             domain: "com.apple.Safari",
             name:   "ShowSidebarInTopSites",
             value:  false
- 
+
   c.default msg:    "Disable Safari's thumbnail cache for History and Top Sites.",
             domain: "com.apple.Safari",
             name:   "DebugSnapshotsUpdatePolicy",
             value:  2
- 
+
   c.default msg:    "Enable Safari's debug menu.",
             domain: "com.apple.Safari",
             name:   "IncludeInternalDebugMenu",
             value:  true
- 
+
   c.default msg:    "Make Safari's search banners default to Contains instead of Starts With.",
             domain: "com.apple.Safari",
             name:    "FindOnPageMatchesWordStartsOnly",
@@ -257,14 +257,14 @@ system_configuration = proc do |c|
             domain: "com.apple.Safari",
             name:   "ProxiesInBookmarksBar",
             value:  "()"
- 
+
   c.default msg:    "Enable the Develop menu and the Web Inspector in Safari.",
             domain: "com.apple.Safari",
             name:   ["IncludeDevelopMenu",
                      "WebKitDeveloperExtrasEnabledPreferenceKey",
                      "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled"],
             value:  true
- 
+
   c.default msg:   "Adding a context menu item for showing the Web Inspector in web views.",
             name:  "WebKitDeveloperExtras",
             value: true
@@ -273,7 +273,7 @@ system_configuration = proc do |c|
             domain: "com.google.Chrome",
             name:   "AppleEnableSwipeNavigateWithScrolls",
             value:  false
-            
+
   c.default msg:    "Disable the annoying backswipe in Chrome Canary.",
             domain: "com.google.Chrome.canary",
             name:   "AppleEnableSwipeNavigateWithScrolls",
@@ -283,37 +283,37 @@ system_configuration = proc do |c|
             domain: "com.google.Chrome",
             name:   "DisablePrintPreview",
             value:  true
-            
+
   c.default msg:    "Use the system-native print preview dialog in Chrome Canary.",
             domain: "com.google.Chrome.canary",
             name:   "DisablePrintPreview",
             value:  true
 
   # }}}
-  
+
   # {{{ Screensaver.
-  
+
   c.default msg: "Require password after sleep or screen saver begins.",
-            domain: "com.apple.screensaver", 
-            name: "askForPassword", 
+            domain: "com.apple.screensaver",
+            name: "askForPassword",
             value: 1
-  
+
   c.default msg: "Wait no time before asking password after sleep or screen saver.",
-            domain: "com.apple.screensaver", 
+            domain: "com.apple.screensaver",
             name: "askForPasswordDelay",
             value: 0
 
   # }}}
-  
+
   # {{{ Screencapture.
-  
+
   c.default msg: "Set screenshot format to PNG.",
-            domain: "com.apple.screencapture", 
-            name: "type", 
+            domain: "com.apple.screencapture",
+            name: "type",
             value: "png"
 
   # }}}
-  
+
   # {{{ Apple Trackpad.
 
   c.default domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
@@ -405,15 +405,15 @@ system_configuration = proc do |c|
             value:  0
 
   # }}}
-  
+
   # {{{ Create basic directories.
-  
+
   c.mkdir msg: "Creating the user's temporary directory.",
           path: "${HOME}/Tmp"
-  
+
   c.mkdir msg: "Creating the user's development directory.",
           path: "${HOME}/Development"
-          
+
   # }}}
 
 end
@@ -443,7 +443,7 @@ module Utils # {{{
 
   def ask(question, type: :string) # {{{
     $stdout.write("#{question.strip}? ")
-    answer = $stdin.gets.chomp 
+    answer = $stdin.gets.chomp
     case type
     when :bool
       if answer =~ /y|ye|yes|yeah|ofc/i
@@ -468,7 +468,7 @@ module Utils # {{{
       error("Unhandled question type: `#{type}`.")
     end
   end # }}}
-  
+
   def type_from_value(value) # {{{
     if value.is_a?(TrueClass) || value.is_a?(FalseClass) then :bool
     elsif value.is_a?(String) then :string
@@ -478,22 +478,22 @@ module Utils # {{{
     else error("Don't know how to handle `#{value.class}`.")
     end
   end # }}}
-  
+
 end # }}}
 
 class CommandsExecutor # {{{
-  
+
   include Utils
-  
+
   def initialize
     @commands = []
   end
 
   # {{{ DSL.
-  
+
   def mkdir(msg: nil, path: nil, as_root: false)
     error("Missing `path`.") if path.nil?
-    
+
     Array(path).each do |n|
       @commands << {
         msg:     msg,
@@ -502,11 +502,11 @@ class CommandsExecutor # {{{
       }
     end
   end
-  
+
   def syssetup(name: nil, value: nil, question: nil, msg: nil)
     error("Missing `name`.") if name.nil?
     error("Missing `value` or `question`.") if value.nil? && question.nil?
-    
+
     value = ask(question) if question
 
     Array(name).each do |n|
@@ -517,11 +517,11 @@ class CommandsExecutor # {{{
       }
     end
   end
-  
+
   def plist(msg: msg, cmd: nil, path: nil, as_root: false)
     error("Missing `cmd`.") if cmd.nil?
     error("Missing `path`.") if path.nil?
-    
+
     Array(cmd).each do |c|
       @commands << {
         msg: msg,
@@ -530,11 +530,11 @@ class CommandsExecutor # {{{
       }
     end
   end
-  
+
   def sysconfig(msg: nil, name: nil, value: nil, question: nil)
     error("Missing `name`.") if name.nil?
     error("Missing `value` or `question`.") if value.nil? && question.nil?
-    
+
     value = ask(question) if question
 
     Array(name).each do |n|
@@ -545,20 +545,20 @@ class CommandsExecutor # {{{
       }
     end
   end
-  
+
   def default(msg: nil, domain: :global, name: nil, value: nil, question: nil, type: nil, as_root: false)
     error("Missing `name`.") if name.nil?
     error("Missing `domain`.") if domain.nil?
     error("Missing `name` or `question`.") if value.nil? && question.nil?
 
     if question
-      value = type.nil? ? ask(question) : ask(question, type: type) 
+      value = type.nil? ? ask(question) : ask(question, type: type)
     end
     type = type_from_value(value) if type.nil?
     error("Unknown type `#{type}`.") unless %i(string bool int float array).include?(type)
     domain = "NSGlobalDomain" if domain == :global
     value_param = type == :array ? value.map{ |v| "\"#{v}\"" }.join(" ") : "\"#{value}\""
-    
+
     Array(name).each do |n|
       @commands << {
         msg:     msg,
@@ -567,9 +567,9 @@ class CommandsExecutor # {{{
       }
     end
   end
-  
+
   # }}}
-  
+
   def execute_commands(dryrun)
     if dryrun
       info("Commands are:")
@@ -590,9 +590,9 @@ class CommandsExecutor # {{{
 end # }}}
 
 class Main # {{{
-  
+
   include Utils
-  
+
   def initialize
     @commands_executor = CommandsExecutor.new
   end
@@ -605,7 +605,7 @@ class Main # {{{
   def self.run(dryrun: false, &block)
     new.run(dryrun, &block)
   end
-  
+
 end # }}}
 
 # Entry point.
