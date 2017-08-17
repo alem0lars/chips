@@ -294,6 +294,14 @@ module Shortcuts
 
   # }}}
 
+  # {{{ fs operations
+
+  def filename
+    Pathname.new(self.to_s).sub_ext("").basename.to_s
+  end
+
+  # }}}
+
   # {{{ misc
 
   def get_config(default: {})
@@ -376,7 +384,16 @@ module Shortcuts
         end
       end
     else
-      "building script `#{script_path.as_tok}`".pinf
+      if script_path.filename.end_with?("-wrapper")
+        program_name = script_path.filename.gsub(/-wrapper$/, "")
+        unless program_name.check_program
+          "missing program `#{program_name}`".perr exit_code: 1
+        end
+        "building wrapper for `#{program_name.as_tok}`".pinf
+        dst_path = dst_path.dirname.join(program_name)
+      else
+        "building script `#{script_path.as_tok}`".pinf
+      end
 
       script_data = script_path.read
       if script_path.extname == ".rb"
