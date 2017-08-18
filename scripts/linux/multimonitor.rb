@@ -23,9 +23,9 @@ def xrandr(output, *args)
 
   if $simulate
     "execute `#{cmd.as_tok}` against `#{output.as_tok}` with args: `#{args.as_tok}`".pinf
-    cmd.run "--output", output, *args
+    cmd.run "--output", output, *args, interactive: true
   else
-    cmd.run "--output", output, *args
+    cmd.run "--output", output, *args, interactive: true
   end
 end
 

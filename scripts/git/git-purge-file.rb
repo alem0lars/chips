@@ -31,7 +31,8 @@ config = "git-purge-file".get_config
               "--tree-filter",
               "rm -rf #{config[:path]}",
               "--prune-empty",
-              "HEAD"
+              "HEAD",
+              interactive: true
   },
   -> () {
     output = StringIO.new
@@ -45,12 +46,12 @@ config = "git-purge-file".get_config
   -> () {
     status
     config[:refs].each do |ref|
-      status &&= "git".run "update-ref", "-d", ref
+      status &&= "git".run "update-ref", "-d", ref, interactive: true
     end
     status
   },
   -> () {
-    "git".run "gc", "--prune=all", "--aggressive"
+    "git".run "gc", "--prune=all", "--aggressive", interactive: true
   }
 ].do_all
 

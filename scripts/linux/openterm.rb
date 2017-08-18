@@ -42,7 +42,7 @@ args += ["-c", "tmux new-session -s #{title} #{cmd.escape}"] if  cmd &&  tmux
 args += ["-c", "tmux new-session -s #{title}"              ] if !cmd &&  tmux
 args += ["-c", "#{cmd}"                                    ] if  cmd && !tmux
 
-term.run(*args)
+term.run(*args, interactive: true)
 
 
 # vim: set filetype=ruby :

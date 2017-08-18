@@ -199,7 +199,7 @@ module Shortcuts
   def run(*args,
           dir: nil, msg: nil, verbose: true, quiet: false, simulate: false,
           detached: false, single: false, ignore_status: false, output: $stdout,
-          retry_on_error: false)
+          interactive: false, retry_on_error: false)
     simulate ||= $simulate
 
     program_name = self.to_s
@@ -226,16 +226,31 @@ module Shortcuts
         run_cmd << " 2>&1"
 
         begin
-          status = if detached
-                     fork do
+          status = if interactive
+                     pid = Process.spawn(run_cmd)
+                     if detached
+                       if output != $stdout
+                         "cannot redirect output in interactive program".perr
+                       end
+                       Process.detach(pid)
+                       true
+                     else
+                       Process.wait(pid)
+                       $?.success?
+                     end
+                   else
+                     if detached
+                       pid = fork do
+                         res = `#{run_cmd}`
+                         output.write(res) unless quiet
+                       end
+                       Process.detach(pid)
+                       true
+                     else
                        res = `#{run_cmd}`
                        output.write(res) unless quiet
+                       $?.success?
                      end
-                     true
-                   else
-                     res = `#{run_cmd}`
-                     output.write(res) unless quiet
-                     $?.success?
                    end
         rescue Interrupt
           status = false
@@ -662,7 +677,7 @@ def openterm(cmd, run_if: true, title: nil, tmux: true)
   end
 
   if run_if
-    "openterm".run(*args)
+    "openterm".run(*args, interactive: true)
   else
     true
   end

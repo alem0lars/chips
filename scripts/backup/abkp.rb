@@ -79,6 +79,7 @@ config = "abkp".get_config
             archive,
             backup[:dir],
             *excludes,
+            interactive: true,
             retry_on_error: true
 
           "attic".run "prune",
@@ -87,6 +88,7 @@ config = "abkp".get_config
             "-d", keep[:daily],
             "-w", keep[:weekly],
             "-m", keep[:monthly],
+            interactive: true,
             retry_on_error: true
         end
       end
