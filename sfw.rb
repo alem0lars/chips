@@ -493,10 +493,11 @@ class Hash;     include Shortcuts end
 
 class Array
 
-  def do_all
+  def do_all(auto_exit_code: false)
     status = true
 
     self.each do |blk|
+      $exit_code = $exit_code.nil? ? 1 : $exit_code + 1 if auto_exit_code
       break unless status
       begin
         status = blk.call
@@ -626,18 +627,18 @@ end
 # parse commandline arguments
 def parse_args(simulate_enabled: true)
   options = {}
-  parser = OptionParser.new do |parser|
+  parser = OptionParser.new do |p|
     if simulate_enabled
-      parser.on("-s", "--[no-]simulate", "run in simulate mode") do |simulate|
+      p.on("-s", "--[no-]simulate", "run in simulate mode") do |simulate|
         $simulate = options[:simulate] = simulate
         "running in `simulate` mode".pinf if $simulate
       end
     end
 
-    yield(parser, options) if block_given?
+    yield(p, options) if block_given?
 
-    parser.on_tail("-h", "--help", "show this message") do
-      puts parser
+    p.on_tail("-h", "--help", "show this message") do
+      puts p
       exit
     end
   end

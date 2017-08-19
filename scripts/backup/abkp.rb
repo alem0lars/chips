@@ -1,11 +1,11 @@
 config = "abkp".get_config
 
 [
-  -> () { # check external requirements (errors: exit_code=1)
-    "missing program `attic`".perr exit_code: 1 unless "attic".check_program
+  -> () { # check external requirements
+    "missing program `attic`".perr unless "attic".check_program
     true
   },
-  -> () { # config normalization (errors: exit_code=2)
+  -> () { # config normalization
     # normalize `config[:remote]`
     config[:remote] ||= {}
     config[:remote][:username] ||= ENV["USER"]
@@ -23,17 +23,17 @@ config = "abkp".get_config
       # normalize `backup[:excludes]`
       backup[:excludes] ||= []
       # normalize `backup[:dir]`
-      "missing backup directory".perr exit_code: 2 unless backup[:dir]
+      "missing backup directory".perr unless backup[:dir]
       backup[:dir] = backup[:dir].to_pn
       unless backup[:dir].directory?
-        "directory #{backup[:dir]} doesn't exist".perr  exit_code: 2
+        "directory #{backup[:dir]} doesn't exist".perr
       end
       # normalize `backup[:keep]`
       backup[:keep] ||= {}
       # normalize `backup[:repo]`
-      "missing backup repository".perr exit_code: 2 unless backup[:repo]
+      "missing backup repository".perr unless backup[:repo]
       # normalize `backup[:name]`
-      "missing backup name".perr exit_code: 2 unless backup[:name]
+      "missing backup name".perr unless backup[:name]
       # normalize `backup[:archive_name]`
       unless backup[:archive_name]
         hostname = `hostname`.strip
@@ -42,7 +42,7 @@ config = "abkp".get_config
     end
     true
   },
-  -> () { # arguments normalization (errors: exit_code=3)
+  -> () { # arguments normalization
     avail_backup_names = config[:backups].map { |backup| backup[:name] }
 
     options = parse_args do |parser, opts|
@@ -59,7 +59,7 @@ config = "abkp".get_config
 
     config[:selected_backup_names] = options[:backup_names] || avail_backup_names
   },
-  -> () { # perform backup (errors: exit_code=4)
+  -> () { # perform backup
     if "perform backups #{config[:selected_backup_names].as_tok}".ask type: :bool
       config[:backups].each do |backup|
         if config[:selected_backup_names].include? backup[:name]
@@ -95,6 +95,6 @@ config = "abkp".get_config
     end
     true
   }
-].do_all
+].do_all(auto_exit_code: true)
 
 # vim: set filetype=ruby :
