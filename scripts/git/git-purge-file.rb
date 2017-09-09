@@ -2,29 +2,26 @@ config = "git-purge-file".get_config
 
 [
   -> () { # check external requirements
-    $exit_code = 1
     "missing program `git`".perr unless "git".check_program
     true
   },
-  -> () { # config normalization
-    $exit_code = 2
-    true
-  },
-  -> () { # arguments normalization (errors: exit_code=3)
-    $exit_code = 3
-    options = parse_args do |parser, options|
+  -> () { # arguments normalization
+    options = parse_args do |parser, opts|
       parser.on("-p", "--path [PATH]",
                 "Path to file or directory that should be purged") do |path|
-        options[:path] = path
+        opts[:path] = path
       end
     end
 
-    "path needs to be provided".perr unless options[:path]
+    config[:path] = options[:path] if options[:path]
 
-    config[:path] = options[:path].to_pn
+    true
   },
-  -> () { # perform commands (errors: exit_code=4)
-    $exit_code = 4
+  -> () { # config normalization
+    "path needs to be provided".perr unless config[:path]
+    config[:path] = config[:path].to_pn
+
+    true
   },
   -> () {
     "git".run "filter-branch",
@@ -42,6 +39,8 @@ config = "git-purge-file".get_config
               "refs/original/",
               output: output
     config[:refs] = output.string.trim.split "\n"
+
+    true
   },
   -> () {
     status
@@ -53,7 +52,7 @@ config = "git-purge-file".get_config
   -> () {
     "git".run "gc", "--prune=all", "--aggressive", interactive: true
   }
-].do_all
+].do_all auto_exit_code: true
 
 
 # vim: set filetype=ruby :

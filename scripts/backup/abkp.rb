@@ -5,7 +5,11 @@ config = "abkp".get_config
     "missing program `attic`".perr unless "attic".check_program
     true
   },
-  -> () { # config normalization
+  -> () { # arguments normalization
+
+    true
+  },
+  -> () { # config and arguments normalization
     # normalize `config[:remote]`
     config[:remote] ||= {}
     config[:remote][:username] ||= ENV["USER"]
@@ -40,24 +44,29 @@ config = "abkp".get_config
         backup[:archive_name] = "#{hostname}-#{backup[:name]}-#{Time.now.strftime("%Y-%m-%d-%H-%M")}"
       end
     end
-    true
-  },
-  -> () { # arguments normalization
+
     avail_backup_names = config[:backups].map { |backup| backup[:name] }
 
+    # Parse options.
     options = parse_args do |parser, opts|
       parser.on("--only x,y,z", Array,
                 "perform only specific backups " +
                 "(available: `#{avail_backup_names}`)") do |backup_names|
-                  if backup_names.all? { |bn| avail_backup_names.include?(bn) }
-                    opts[:backup_names] = backup_names
-                  else
-                    "invalid backup names".perr
-                  end
-                end
+        if backup_names.all? { |bn| avail_backup_names.include?(bn) }
+          opts[:backup_names] = backup_names
+        else
+          "invalid backup names".perr
+        end
+      end
+    end
+    if options[:backup_names]
+      config[:selected_backup_names] = options[:backup_names]
+    else
+      # If no backups have been selected, select all backups available.
+      config[:selected_backup_names] = avail_backup_names
     end
 
-    config[:selected_backup_names] = options[:backup_names] || avail_backup_names
+    true
   },
   -> () { # perform backup
     if "perform backups #{config[:selected_backup_names].as_tok}".ask type: :bool
@@ -93,6 +102,7 @@ config = "abkp".get_config
         end
       end
     end
+
     true
   }
 ].do_all(auto_exit_code: true)

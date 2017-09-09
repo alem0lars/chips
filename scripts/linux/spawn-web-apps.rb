@@ -2,12 +2,10 @@ config = "spawn-web-apps".get_config
 
 [
   -> () { # check external requirements
-    $exit_code = 1
     "missing program `chromium`".perr unless "chromium".check_program
     true
   },
   -> () { # config normalization
-    $exit_code = 2
     # normalize `config[:apps]`
     config[:apps] ||= []
     "no apps were specified".perr if config[:apps].empty?
@@ -40,21 +38,39 @@ config = "spawn-web-apps".get_config
           }
         end
       end.compact
-      "found #{manifests_info.length.as_tok} #{"!= 1".as_tok} apps matching #{app[:name].as_tok}".perr if manifests_info.length != 1
+      "found #{manifests_info.length.as_tok} (#{"!= 1".as_tok}) apps matching #{app[:name].as_tok}".perr if manifests_info.length != 1
       manifest_info = manifests_info.first
       app[:manifest] = manifest_info[:manifest]
       app[:id] = manifest_info[:id]
     end
 
+    avail_app_names = config[:apps].map { |app| app[:name] }
+
+    # Parse options.
+    options = parse_args do |parser, opts|
+      parser.on("--only x,y,z", Array,
+                "spawn only specific apps " +
+                "(available: `#{avail_app_names}`)") do |app_names|
+        if app_names.all? { |bn| avail_app_names.include?(bn) }
+          opts[:app_names] = app_names
+        else
+          "invalid apps specified, not in: #{avail_app_names}".perr
+        end
+      end
+    end
+    if options[:app_names]
+      config[:selected_app_names] = options[:app_names]
+    else
+      # If no apps have been selected, select all apps available.
+      config[:selected_app_names] = avail_app_names
+    end
+
     true
   },
-  -> () { # arguments normalization (errors: exit_code=3)
-    $exit_code = 3
-    _options = parse_args
-  },
-  -> () { # spawn web apps (errors: exit_code=4)
-    $exit_code = 4
-    config[:apps].each do |app|
+  -> () { # spawn web apps
+    config[:apps].select do |app|
+      config[:selected_app_names].include? app[:name]
+    end.each do |app|
       # 1: Find
       "spawning app #{app[:name].as_tok}".pinf
       "/usr/lib64/chromium-browser/chromium-launcher.sh".run(
@@ -63,8 +79,10 @@ config = "spawn-web-apps".get_config
         detached: true
       )
     end
+
+    true
   }
-].do_all
+].do_all auto_exit_code: true
 
 
 # vim: set filetype=ruby :
