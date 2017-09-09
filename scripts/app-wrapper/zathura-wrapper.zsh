@@ -7,4 +7,4 @@
 unset GDK_DPI_SCALE
 unset GDK_SCALE
 
-exec /usr/bin/zathura
+exec /usr/bin/zathura "$@"
