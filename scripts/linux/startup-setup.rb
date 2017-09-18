@@ -75,7 +75,10 @@ _options = parse_args
   -> {
     return true unless config[:web_apps]
     args = []
-    args += %w(--only) + config[:web_apps][:only] if config[:web_apps][:only]
+    if config[:web_apps][:only]
+      args << "--only"
+      args << config[:web_apps][:only].join(",")
+    end
     "spawn-web-apps".run(*args, detached: true, single: true, interactive: true)
   },
   # => spawn pre-defined consoles
