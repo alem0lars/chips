@@ -72,7 +72,12 @@ _options = parse_args
     end
   },
   # => spawn web apps
-  -> { "spawn-web-apps".run_if config[:web_apps], detached: true, single: true, interactive: true },
+  -> {
+    return true unless config[:web_apps]
+    args = []
+    args += %w(--only) + config[:web_apps][:only] if config[:web_apps][:only]
+    "spawn-web-apps".run(*args, detached: true, single: true, interactive: true)
+  },
   # => spawn pre-defined consoles
   -> {
     if config[:tmuxinator]
