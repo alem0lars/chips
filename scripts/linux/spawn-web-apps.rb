@@ -73,11 +73,9 @@ config = "spawn-web-apps".get_config
     end.each do |app|
       # 1: Find
       "spawning app #{app[:name].as_tok}".pinf
-      "/usr/lib64/chromium-browser/chromium-launcher.sh".run(
-        "--profile-directory=#{app[:profile]}",
-        "--app-id=#{app[:id]}",
-        detached: true
-      )
+      "chromium".run "--profile-directory=#{app[:profile]}",
+                     "--app-id=#{app[:id]}",
+                     detached: true
     end
 
     true
