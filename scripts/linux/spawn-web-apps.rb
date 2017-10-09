@@ -1,11 +1,13 @@
 config = "spawn-web-apps".get_config
 
 [
-  -> () { # check external requirements
+  -> () {
+    # Check external requirements.
     "missing program `chromium`".perr unless "chromium".check_program
     true
   },
-  -> () { # config normalization
+  -> () {
+    # Config normalization
     # normalize `config[:apps]`
     config[:apps] ||= []
     "no apps were specified".perr if config[:apps].empty?
@@ -58,6 +60,8 @@ config = "spawn-web-apps".get_config
         end
       end
     end
+
+    # Merge `options` <-> `configs`.
     if options[:app_names]
       config[:selected_app_names] = options[:app_names]
     else
@@ -67,7 +71,8 @@ config = "spawn-web-apps".get_config
 
     true
   },
-  -> () { # spawn web apps
+  -> () {
+    # Spawn web apps.
     config[:apps].select do |app|
       config[:selected_app_names].include? app[:name]
     end.each do |app|
