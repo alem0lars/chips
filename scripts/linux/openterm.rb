@@ -40,14 +40,16 @@ args += ["-title", title]
 args += ["-e", "zsh", "-i"]
 
 if tmux
-  if "tmux".run("has-session", "-t", title, output: ->(out, _) { out.empty? })
+  if "tmux".run("has-session", "-t", title, output: ->(out, _) { out.empty? }, verbose: false)
     args += ["-c", "tmux attach-session -t #{title}"]
+    "attaching to existing tmux session: #{title.as_tok}".pinf
   else
     if cmd
       args += ["-c", "tmux new-session -s #{title} #{cmd.escape}"]
     else
       args += ["-c", "tmux new-session -s #{title}"]
     end
+    "creating new tmux session: #{title.as_tok}".pinf
   end
 else
   if cmd
