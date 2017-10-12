@@ -84,7 +84,7 @@ _options = parse_args
   # => spawn pre-defined consoles
   -> {
     if config[:tmuxinator]
-      "tmuxinator".run "stop", "sysmon", quiet: true, ignore_status: true, interactive: true
+      "tmuxinator".run "stop", "sysmon", ignore_status: true, interactive: true
       openterm %w(tmuxinator start sysmon), title: :sysmon, tmux: false
     end
   }

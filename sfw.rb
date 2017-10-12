@@ -199,7 +199,7 @@ module Shortcuts
   end
 
   def run(*args,
-          dir: nil, msg: nil, verbose: true, quiet: false, simulate: false,
+          dir: nil, msg: nil, verbose: true, simulate: false,
           detached: false, single: false, ignore_status: false, output: $stdout,
           interactive: false, retry_on_error: false)
     simulate ||= $simulate
@@ -217,6 +217,26 @@ module Shortcuts
       pretty_cmd << args.map do |arg|
         arg.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
       end.join(" ")
+    end
+
+    handle_output = ->(output_data) do
+      data = output_data.strip
+      lines = data.split("\n")
+
+      tmp_output, fn = if output.respond_to? :call
+                         [StringIO.new, output]
+                       else
+                         [output, ->(_, _) { true }]
+                       end
+
+      return false unless $?.success?
+
+      if tmp_output.nil?
+        true
+      else
+        tmp_output.write(data)
+        fn.call(data, lines)
+      end
     end
 
     status = false
@@ -244,14 +264,13 @@ module Shortcuts
                      if detached
                        pid = fork do
                          res = `#{run_cmd}`
-                         output.write(res) unless quiet
+                         handle_output.call(res)
                        end
                        Process.detach(pid)
                        true
                      else
                        res = `#{run_cmd}`
-                       output.write(res) unless quiet
-                       $?.success?
+                       handle_output.call(res)
                      end
                    end
         rescue Interrupt
@@ -285,9 +304,10 @@ module Shortcuts
           if retry_on_error
             if "retry".ask type: :bool
               status = run(*args, dir: dir, msg: msg, verbose: verbose,
-                           quiet: quiet, simulate: simulate, detached: detached,
+                           simulate: simulate, detached: detached,
                            single: single, ignore_status: ignore_status,
-                           output: output, retry_on_error: retry_on_error)
+                           output: output, interactive: interactive,
+                           retry_on_error: retry_on_error)
             else
               status = false
             end
@@ -657,7 +677,7 @@ end
 # {{{ specific programs support
 
 def lpass_logged_in?
-  "lpass".run("status", verbose: false, quiet: true)
+  "lpass".run("status", verbose: false, output: nil)
 end
 
 def lpass_sync

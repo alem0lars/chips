@@ -31,16 +31,29 @@ end
 
 cmd = options[:cmd]
 
-title.gsub! /[@.]/, "-"
+title.gsub!(/[@.]/, "-")
 
-ENV.delete "TMUX"
+ENV.delete "TMUX" if tmux
 
 args  = []
 args += ["-title", title]
 args += ["-e", "zsh", "-i"]
-args += ["-c", "tmux new-session -s #{title} #{cmd.escape}"] if  cmd &&  tmux
-args += ["-c", "tmux new-session -s #{title}"              ] if !cmd &&  tmux
-args += ["-c", "#{cmd}"                                    ] if  cmd && !tmux
+
+if tmux
+  if "tmux".run("has-session", "-t", title, output: ->(out, _) { out.empty? })
+    args += ["-c", "tmux attach-session -t #{title}"]
+  else
+    if cmd
+      args += ["-c", "tmux new-session -s #{title} #{cmd.escape}"]
+    else
+      args += ["-c", "tmux new-session -s #{title}"]
+    end
+  end
+else
+  if cmd
+    args += ["-c", "#{cmd}"]
+  end
+end
 
 term.run(*args, interactive: true)
 
