@@ -692,7 +692,7 @@ def lpass_show_pwd(id, **run_args)
   "lpass".capture "show", "--pass", "H-#{id.to_s}-H", **run_args
 end
 
-def openterm(cmd, run_if: true, title: nil, tmux: true)
+def openterm(cmd, run_if: true, title: nil, tmux: true, detached: false)
   args  = []
   args += ["--title", title]
   args += [tmux ? "--tmux" : "--no-tmux"]
@@ -702,7 +702,7 @@ def openterm(cmd, run_if: true, title: nil, tmux: true)
   end
 
   if run_if
-    "openterm".run(*args, interactive: true)
+    "openterm".run(*args, interactive: true, detached: detached)
   else
     true
   end

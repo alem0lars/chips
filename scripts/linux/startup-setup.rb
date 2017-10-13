@@ -50,10 +50,10 @@ _options = parse_args
   -> { "thunderbird".run_if config[:thunderbird], detached: true, single: true, interactive: true },
   -> { "slack".run config[:slack], detached: true, single: true, interactive: true },
   -> { "telegram-desktop".run config[:telegram], detached: true, single: true, interactive: true },
-  -> { openterm %w(weechat), run_if: config[:weechat], title: :weechat },
-  -> { openterm %w(mutt), run_if: config[:mutt], title: :mutt },
-  -> { openterm %w(turses), run_if: config[:turses], title: :turses },
-  -> { openterm %w(task), title: :task },
+  -> { openterm %w(weechat), run_if: config[:weechat], title: :weechat, detached: true },
+  -> { openterm %w(mutt), run_if: config[:mutt], title: :mutt, detached: true },
+  -> { openterm %w(turses), run_if: config[:turses], title: :turses, detached: true },
+  -> { openterm %w(task), title: :task, detached: true },
   # => connections to remote servers
   -> {
     if config[:ssh]
@@ -65,7 +65,7 @@ _options = parse_args
         cmd += ["sshpass", "-p", "H-#{ssh[:pwd]}-H"] if ssh[:pwd]
         cmd += ["ssh", "#{ssh[:user]}@#{ssh[:server]}"]
 
-        openterm cmd, title: ssh[:title]
+        openterm cmd, title: ssh[:title], detached: true
       end
     else
       true
@@ -85,7 +85,7 @@ _options = parse_args
   -> {
     if config[:tmuxinator]
       "tmuxinator".run "stop", "sysmon", ignore_status: true, interactive: true
-      openterm %w(tmuxinator start sysmon), title: :sysmon, tmux: false
+      openterm %w(tmuxinator start sysmon), title: :sysmon, tmux: false, detached: true
     end
   }
 ].do_all
