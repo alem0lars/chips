@@ -36,11 +36,17 @@ title.gsub!(/[@.]/, "-")
 ENV.delete "TMUX" if tmux
 
 args  = []
-if cmd =~ /rxvt/
-  args += ["-title", title]
-else
-  args += ["--title", title]
-end
+
+# Add title argument.
+args += [
+  case term
+  when /rxvt/ then "-title"
+  when /^st$/ then "-t"
+  else "--title"
+  end,
+  title
+]
+
 args += ["-e", "zsh", "-i"]
 
 if tmux
