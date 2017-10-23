@@ -12,8 +12,17 @@ _options = parse_args
   -> { "dunst".run_if config[:dunst], detached: true, single: true, interactive: true },
   -> { "taffybar".run_if config[:taffybar], detached: true, single: true, interactive: true },
   -> {
+    if config[:wmname]
+      "wmname".run config[:wmname], detached: true, single: true, interactive: true
+    else
+      true
+    end
+  },
+  -> {
     if config[:feh]
       "feh".run "--no-fehbg", "--image-bg", "black", "--bg-max", config[:feh][:path].escape, interactive: true
+    else
+      true
     end
   },
   # setup lastpass
