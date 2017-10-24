@@ -681,11 +681,11 @@ def lpass_logged_in?
 end
 
 def lpass_sync
-  "lpass".run "sync"
+  "lpass".run "sync", interactive: true
 end
 
 def lpass_login(user)
-  "lpass".run "login", user
+  "lpass".run "login", user, interactive: true
 end
 
 def lpass_show_pwd(id, **run_args)
