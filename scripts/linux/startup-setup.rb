@@ -52,12 +52,13 @@ _options = parse_args
     end
   },
   # trayer apps
-  -> { "megasync".run_if config[:mega], detached: true, single: true, interactive: true },
+  -> { "megasync".run_if config[:mega], detached: true, single: true },
   # standalone apps
-  -> { "copyq".run_if config[:copyq], detached: true, single: true, interactive: true },
-  -> { "thunderbird".run_if config[:thunderbird], detached: true, single: true, interactive: true },
-  -> { "slack".run config[:slack], detached: true, single: true, interactive: true },
-  -> { "telegram-desktop".run config[:telegram], detached: true, single: true, interactive: true },
+  -> { "copyq".run_if config[:copyq], detached: true, single: true },
+  -> { "thunderbird".run_if config[:thunderbird], detached: true, single: true },
+  -> { "slack".run_if config[:slack], detached: true, single: true },
+  -> { "telegram-desktop".run_if config[:telegram], detached: true, single: true },
+  -> { "skypeforlinux".run_if config[:skype], detached: true, single: true },
   -> { openterm %w(weechat), run_if: config[:weechat], title: :weechat, detached: true },
   -> { openterm %w(mutt), run_if: config[:mutt], title: :mutt, detached: true },
   -> { openterm %w(turses), run_if: config[:turses], title: :turses, detached: true },
