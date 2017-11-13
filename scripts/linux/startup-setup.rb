@@ -5,6 +5,7 @@ _options = parse_args
 [
   # basic daemons
   -> { "start-pulseaudio-x11".run single: true, interactive: true },
+  -> { "multimonitor".run_if config[:multimonitor], detached: true, single: true, interactive: true },
   -> { "redshift".run_if config[:redshift], detached: true, single: true, interactive: true },
   -> { "unclutter".run "-root", detached: true, single: true, interactive: true },
   # setup desktop environment
