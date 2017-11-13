@@ -80,7 +80,7 @@ end
 
     # 2: Parse options
     options = parse_args do |parser, opts|
-      parser.on("--name [NAME]",
+      parser.on("-p", "--profile [PROFILE]",
                 "select the profile " +
                 "(available: `#{$config[:profiles].keys}`)") do |name|
         opts[:selected_profile] = name if name
