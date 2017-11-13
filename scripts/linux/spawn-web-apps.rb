@@ -1,21 +1,18 @@
 config = "spawn-web-apps".get_config
 
 [
-  -> () {
-    # Check external requirements.
-    "missing program `chromium`".perr unless "chromium".check_program
-    true
+  -> () { # Check external requirements
+    "chromium".check_program!
   },
-  -> () {
-    # Config normalization
-    # normalize `config[:apps]`
+  -> () { # Config normalization
+    # Normalize `config[:apps]`
     config[:apps] ||= []
     "no apps were specified".perr if config[:apps].empty?
     config[:apps].each_with_index do |app, idx|
-      # normalize `app[:name]`
+      # Normalize `app[:name]`
       app[:name] ||= ""
       "missing name for app at index #{idx.as_tok}".perr if app[:name].empty?
-      # normalize `app[:profile]` and `app[:profile_dir]`
+      # Normalize `app[:profile]` and `app[:profile_dir]`
       if app[:profile] && app[:profile_dir]
         "cannot specify both #{profile.as_tok} and #{profile_dir.as_tok}".perr
       end
@@ -27,7 +24,7 @@ config = "spawn-web-apps".get_config
       app[:profile] ||= app[:profile_dir].basename
       "missing profile for app".perr if app[:profile].empty?
 
-      # find and normalize `app[:manifest]` and `app[:id]`
+      # Find and normalize `app[:manifest]` and `app[:id]`
       extensions_dir = app[:profile_dir].join("Extensions")
       manifests_pattern = extensions_dir.join("**", "manifest.json")
       manifests_info = Dir.glob(manifests_pattern).map do |manifest_file|
@@ -48,7 +45,7 @@ config = "spawn-web-apps".get_config
 
     avail_app_names = config[:apps].map { |app| app[:name] }
 
-    # Parse options.
+    # Parse options
     options = parse_args do |parser, opts|
       parser.on("--only x,y,z", Array,
                 "spawn only specific apps " +
@@ -61,7 +58,7 @@ config = "spawn-web-apps".get_config
       end
     end
 
-    # Merge `options` <-> `configs`.
+    # Merge `options` <-> `configs`
     if options[:app_names]
       config[:selected_app_names] = options[:app_names]
     else

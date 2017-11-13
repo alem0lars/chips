@@ -1,0 +1,99 @@
+config = "multimonitor".get_config(default: {
+  setups: {
+    # The default setup info, it does nothing particular
+    default: { eDP1: { role: :internal } }
+  }
+})
+
+[
+  -> () { # Check external requirements
+    "xrandr".check_program!
+  },
+  -> () { # Config normalization
+    # The allowed monitor roles
+    allowed_roles = %i(internal external)
+
+    # 1: Parse options
+    options = parse_args do |parser, opts|
+      parser.on("--name [NAME]", config.keys,
+                "select the setup (available: `#{config.keys}`)") do |name|
+        opts[:selected] = name if name
+      end
+    end
+
+    # 2: Merge `options` <-> `configs`
+    config[:selected_name] = config[:default_setup_name] || options[:setup_name]
+
+    # 3: Normalize `configs`
+    # 3.1: Normalize `config[:setups]`
+    config[:setups] ||= []
+    config[:setups].each do |setup|
+      "invalid role detected".perr unless monitors_by_role(setup, allowed_roles)
+      unless monitors_by_role(setup, :internal).length == 1
+        "exactly one internal monitor is needed".perr
+      end
+      setup[:scale] = setup[:scale].to_i if setup[:scale]
+    end
+    # 3.2: Normalize `config[:selected_name]`
+    config[:selected_name] = config[:selected_name].to_sym
+    unless config[:setups].has_key? config[:selected_name]
+      "invalid setup name #{config[:selected_name].as_tok}".perr
+    end
+    # 3.3: Normalize `config[:selected]`
+    config[:selected] = config[:setups][config[:selected_name]]
+    # 3.4: Normalize `config[:internal_monitor_name]`
+    config[:internal_monitor_name], _ = monitors_by_role(setup_info, :internal).first
+    unless config[:internal_monitor_name]
+      "missing monitor with role #{"internal".as_tok}".perr
+    end
+    unless config[:setups].has_key? config[:internal_monitor_name]
+      "invalid setup name #{config[:internal_monitor_name].as_tok}".perr
+    end
+    # 3.5: Normalize `config[:internal_monitor]`
+    config[:internal_monitor] = config[:setups][config[:internal_monitor_name]]
+  },
+  -> () { # Perform monitors setup
+    "using setup `#{config[:selected_name].as_tok}`: `#{config[:selected].as_tok}`".pinf
+
+    # TODO setup monitors considering position, mode, scale (with scale do
+    # panning):
+    #
+    # 1. xrandr --output eDP1 --primary --mode 2880x1620 --pos 0x0 --rotate normal --output DP2-1 --mode 1680x1050 --pos 2880x0 --scale 2x2 --right-of eDP1 --rotate normal
+    # 2. xrandr --output DP2-1 --off
+    # 3. xrandr --output eDP1 --primary --mode 2880x1620 --pos 0x0 --rotate normal --output DP2-1 --mode 1680x1050 --pos 2880x0 --scale 2x2 --panning 3360x2100 --right-of eDP1 --rotate normal
+    #
+    # monitors_by_role(setup_info, :external)
+    #   .each { |n, _| xrandr(n, "--off") }
+    # monitors_by_role(setup_info, :external)
+    #   .select { |_, i| i[:position] }
+    #   .each { |n, i| xrandr(n,
+    #                         "--#{i[:position]}-of" => internal_monitor_name,
+    #                         "--mode"               => i[:mode]) }
+  }
+].do_all auto_exit_code: true
+
+
+#
+# Filter `setup_info`, keeping only those having the provided `role`
+#
+def monitors_by_role(setup_info, roles)
+  roles = Array(roles).map { |role| role.to_s }
+  setup_info.find_all { |_, info| roles.include?(info[:role].to_s) }
+end
+
+def xrandr(output, *args, **kwargs)
+  cmd = "xrandr"
+
+  xrandr_args = args
+  kwargs.each { |k, v| xrandr_args += [k, v] if v }
+
+  if $simulate
+    "execute `#{cmd.as_tok}` against `#{output.as_tok}` with args: `#{args.as_tok}`".pinf
+    cmd.run "--output", output, *xrandr_args, interactive: true
+  else
+    cmd.run "--output", output, *xrandr_args, interactive: true
+  end
+end
+
+
+# vim: set filetype=ruby :

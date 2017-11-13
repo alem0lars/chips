@@ -184,6 +184,11 @@ module Shortcuts
     find_executable0(self.to_s)
   end
 
+  def check_program!
+    "missing program `#{self.to_s}`".perr unless self.to_s.check_program
+    true
+  end
+
   def is_running(**run_args)
     if "pgrep".check_program || "`pgrep` is needed".perr
       "pgrep".capture(self.to_s, **run_args).length > 0
