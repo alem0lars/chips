@@ -83,12 +83,13 @@ end
       parser.on("-p", "--profile [PROFILE]",
                 "select the profile " +
                 "(available: `#{$config[:profiles].keys}`)") do |profile_name|
-        opts[:selected_profile] = profile_name if profile_name
+        opts[:selected_profile_name] = profile_name if profile_name
       end
     end
 
     # 3: Merge `options` <-> `$config`
-    $config[:selected_profile_name] = $config[:default_profile_name] || options[:profile_name]
+    $config[:selected_profile_name] = options[:selected_profile_name] ||
+                                      $config[:default_profile_name]
 
     # 4: Normalize `$config`
     # 4.2: Normalize `$config[:selected_profile_name]`
