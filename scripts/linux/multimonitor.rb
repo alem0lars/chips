@@ -82,8 +82,8 @@ end
     options = parse_args do |parser, opts|
       parser.on("-p", "--profile [PROFILE]",
                 "select the profile " +
-                "(available: `#{$config[:profiles].keys}`)") do |name|
-        opts[:selected_profile] = name if name
+                "(available: `#{$config[:profiles].keys}`)") do |profile_name|
+        opts[:selected_profile] = profile_name if profile_name
       end
     end
 
