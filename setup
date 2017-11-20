@@ -12,10 +12,6 @@ DEST_DIR    = (ENV["CHIPS_DST_DIR"] || "/usr/local/bin").to_pn
 # ─────────────────────────────────────────────────────────────────────────────┘
 
 # ──────────────────────────────────────────────────────────────────── Utils ──┐
-def cleanup
-  Pathname.glob(DEST_DIR.join("*")) do |chip_src_path|
-  end
-end
 def copy_chips(category)
   Pathname.glob(SCRIPTS_DIR.join(category.to_s).join("*")) do |chip_src_path|
     "installing chip `#{chip_src_path.basename.as_tok}`..".pinf

@@ -1,35 +1,35 @@
-config = "startup-setup".get_config
+$config = "startup-setup".get_config
 
 _options = parse_args
 
 [
   # basic daemons
   -> { "start-pulseaudio-x11".run single: true, interactive: true },
-  -> { "multimonitor".run_if config[:multimonitor], detached: true, single: true, interactive: true },
-  -> { "redshift".run_if config[:redshift], detached: true, single: true, interactive: true },
+  -> { "multimonitor".run_if $config[:multimonitor], detached: true, single: true, interactive: true },
+  -> { "redshift".run_if $config[:redshift], detached: true, single: true, interactive: true },
   -> { "unclutter".run "-root", detached: true, single: true, interactive: true },
   # setup desktop environment
-  -> { "dunst".run_if config[:dunst], detached: true, single: true, interactive: true },
-  -> { "taffybar".run_if config[:taffybar], detached: true, single: true, interactive: true },
+  -> { "dunst".run_if $config[:dunst], detached: true, single: true, interactive: true },
+  -> { "taffybar".run_if $config[:taffybar], detached: true, single: true, interactive: true },
   -> {
-    if config[:wmname]
-      "wmname".run config[:wmname], detached: true, single: true, interactive: true
+    if $config[:wmname]
+      "wmname".run $config[:wmname], detached: true, single: true, interactive: true
     else
       true
     end
   },
   -> {
-    if config[:feh]
-      "feh".run "--no-fehbg", "--image-bg", "black", "--bg-max", config[:feh][:path].escape, interactive: true
+    if $config[:feh]
+      "feh".run "--no-fehbg", "--image-bg", "black", "--bg-max", $config[:feh][:path].escape, interactive: true
     else
       true
     end
   },
   # setup lastpass
   -> {
-    if config[:lastpass]
+    if $config[:lastpass]
       unless lpass_logged_in?
-        [ -> { lpass_login config[:lastpass][:user] },
+        [ -> { lpass_login $config[:lastpass][:user] },
           -> { lpass_sync }
         ].do_all
       else
@@ -53,21 +53,21 @@ _options = parse_args
     end
   },
   # trayer apps
-  -> { "megasync".run_if config[:mega], detached: true, single: true },
+  -> { "megasync".run_if $config[:mega], detached: true, single: true },
   # standalone apps
-  -> { "copyq".run_if config[:copyq], detached: true, single: true },
-  -> { "trello".run_if config[:trello], detached: true, single: true },
-  -> { "toggl".run_if config[:toggl], detached: true, single: true },
-  -> { "thunderbird".run_if config[:thunderbird], detached: true, single: true },
-  -> { "slack".run_if config[:slack], detached: true, single: true },
-  -> { "whatsapp".run_if config[:whatsapp], detached: true, single: true },
-  -> { "telegram-desktop".run_if config[:telegram], detached: true, single: true },
-  -> { "skypeforlinux".run_if config[:skype], detached: true, single: true },
-  -> { openterm %w(weechat), run_if: config[:weechat], title: :weechat, detached: true },
+  -> { "copyq".run_if $config[:copyq], detached: true, single: true },
+  -> { "trello".run_if $config[:trello], detached: true, single: true },
+  -> { "toggl".run_if $config[:toggl], detached: true, single: true },
+  -> { "thunderbird".run_if $config[:thunderbird], detached: true, single: true },
+  -> { "slack".run_if $config[:slack], detached: true, single: true },
+  -> { "whatsapp".run_if $config[:whatsapp], detached: true, single: true },
+  -> { "telegram-desktop".run_if $config[:telegram], detached: true, single: true },
+  -> { "skypeforlinux".run_if $config[:skype], detached: true, single: true },
+  -> { openterm %w(weechat), run_if: $config[:weechat], title: :weechat, detached: true },
   # => connections to remote servers
   -> {
-    if config[:ssh]
-      config[:ssh].each do |ssh|
+    if $config[:ssh]
+      $config[:ssh].each do |ssh|
         ssh[:pwd].as_pwd!
         ssh[:title] ||= "#{ssh[:user]}@#{ssh[:server]}"
 
@@ -83,17 +83,17 @@ _options = parse_args
   },
   # => spawn web apps
   -> {
-    return true unless config[:web_apps]
+    return true unless $config[:web_apps]
     args = []
-    if config[:web_apps][:only]
+    if $config[:web_apps][:only]
       args << "--only"
-      args << config[:web_apps][:only].join(",")
+      args << $config[:web_apps][:only].join(",")
     end
     "spawn-web-apps".run(*args, detached: true, single: true, interactive: true)
   },
   # => spawn pre-defined consoles
   -> {
-    if config[:tmuxinator]
+    if $config[:tmuxinator]
       "tmuxinator".run "stop", "sysmon", ignore_status: true, interactive: true
       openterm %w(tmuxinator start sysmon), title: :sysmon, tmux: false, detached: true
     end
