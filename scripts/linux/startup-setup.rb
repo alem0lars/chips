@@ -56,14 +56,14 @@ _options = parse_args
   -> { "megasync".run_if config[:mega], detached: true, single: true },
   # standalone apps
   -> { "copyq".run_if config[:copyq], detached: true, single: true },
+  -> { "trello".run_if config[:trello], detached: true, single: true },
+  -> { "toggl".run_if config[:toggl], detached: true, single: true },
   -> { "thunderbird".run_if config[:thunderbird], detached: true, single: true },
   -> { "slack".run_if config[:slack], detached: true, single: true },
+  -> { "whatsapp".run_if config[:whatsapp], detached: true, single: true },
   -> { "telegram-desktop".run_if config[:telegram], detached: true, single: true },
   -> { "skypeforlinux".run_if config[:skype], detached: true, single: true },
   -> { openterm %w(weechat), run_if: config[:weechat], title: :weechat, detached: true },
-  -> { openterm %w(mutt), run_if: config[:mutt], title: :mutt, detached: true },
-  -> { openterm %w(turses), run_if: config[:turses], title: :turses, detached: true },
-  -> { openterm %w(task), title: :task, detached: true },
   # => connections to remote servers
   -> {
     if config[:ssh]
