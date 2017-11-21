@@ -1,28 +1,55 @@
-ensure_root
+$config = {}
 
-kernel_parent_dir = "/usr/src".to_pn
+[ -> {
+    ensure_root
+  },
+  -> {
+    $config[:boot_dir] = "/boot".to_pn
+    $config[:kernel_parent_dir] = "/usr/src".to_pn
 
-avail_kernels = Pathname.glob(kernel_parent_dir.join("linux*")).
-                         map { |kn| kn.basename }.
-                         map(&:to_s).
-                         sort
+    avail_kernels = Pathname.glob($config[:kernel_parent_dir].join("linux*")).
+                             map { |kn| kn.basename }.
+                             map(&:to_s).
+                             sort
 
-options = parse_args do |parser, options|
-  parser.on("--kernel [KERNEL]", avail_kernels,
-            "select the kernel (available: `#{avail_kernels}`)") do |kernel|
-    options[:kernel_name] = kernel
-  end
-end
-options[:kernel_dir] = kernel_parent_dir.join(options[:kernel_name] || "linux").realpath
-options[:kernel_name] = options[:kernel_dir].basename.gsub "linux-", ""
+    options = parse_args do |parser, opts|
+      parser.on("--kernel [KERNEL]", avail_kernels,
+                "select the kernel (available: `#{avail_kernels}`)") do |kernel|
+        opts[:kernel_name] = kernel
+      end
+    end
 
-boot_dir   = "/boot".to_pn
+    $config[:kernel_dir] = $config[:kernel_parent_dir].join(
+      options[:kernel_name] || "linux"
+    ).realpath
+    $config[:kernel_name] = $config[:kernel_dir].basename.gsub "linux-", ""
 
-[ -> { "make".run dir: options[:kernel_dir], msg: "compiling.." },
-  -> { "make".run "modules_install", dir: options[:kernel_dir], msg: "installing kernel modules.." },
-  -> { "make".run "install", dir: options[:kernel_dir], msg: "installing kernel image.." },
-  -> { "dracut".run "--force", boot_dir.join("initrd-#{options[:kernel_name]}"), msg: "generating the initramfs.." }
-].do_all
+    true
+  },
+  -> {
+    "make".run dir: $config[:kernel_dir],
+               interactive: true,
+               msg: "compiling.."
+  },
+  -> {
+    "make".run "modules_install",
+               dir: $config[:kernel_dir],
+               interactive: true,
+               msg: "installing kernel modules.."
+  },
+  -> {
+    "make".run "install",
+               dir: $config[:kernel_dir],
+               interactive: true,
+               msg: "installing kernel image.."
+  },
+  -> {
+    "dracut".run "--force",
+                 $config[:boot_dir].join("initrd-#{$config[:kernel_name]}"),
+                 interactive: true,
+                 msg: "generating the initramfs.."
+  }
+].do_all auto_exit_code: true
 
 
 # vim: set filetype=ruby :

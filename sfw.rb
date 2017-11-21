@@ -646,6 +646,8 @@ end
 def ensure_root
   if !(Process.euid == 0)
     "the script needs root privileges".perr exit_code: 255
+  else
+    true
   end
 end
 
