@@ -20,10 +20,16 @@ $ ./setup
 
 Chips are divided by category:
 
-* [`gnulinux`](./scripts/gnulinux): Chips for all types of `GNU/Linux`es (no distro-specific).
-* [`gentoo`](./scripts/gentoo): Chips specific for `Gentoo`-based systems.
-* [`osx`](./scripts/osx): Chips specific for `OSX`.
-* [`jee`](./scripts/jee): Chips for `Java Enterprise Edition`.
+* [`app-wrapper`](./scripts/app-wrapper) (`WIP`): Application wrappers
+* [`backup`](./scripts/backup): Chips for backups
+* [`fzf`](./scripts/fzf): Chips specific for `fzf`
+* [`gafs`](./scripts/gafs) (`WIP`): Chip "Gimme-a-f\*cking-shell"
+* [`gentoo`](./scripts/gentoo): Chips specific for `Gentoo`-based systems
+* [`git`](./scripts/git): Chips related to `git` VCS
+* [`jee`](./scripts/jee): Chips for `Java Enterprise Edition`
+* [`linux`](./scripts/linux): Chips for all types of `GNU/Linux`es (no distro-specific)
+* [`openssl`](./scripts/openssl): Chips related to `openssl`
+* [`osx`](./scripts/osx): Chips specific for `OSX`
 
 ## Development
 
@@ -32,3 +38,7 @@ Setup:
 ```
 $ bundle install
 ```
+
+### Ruby chips
+
+Chips written in Ruby rely on framework `sfw` (automatically embedded into the chip), so you should use Ruby as much as possible.
