@@ -1,4 +1,4 @@
 #!/bin/zsh
 
 
-exec optirun pgAdmin4
+exec optirun /usr/bin/pgAdmin4
