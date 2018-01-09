@@ -1,0 +1,17 @@
+#!/usr/bin/env python2
+
+import os
+from gnomekeyring import unlock_sync
+from getpass import getpass
+
+
+if __name__ == "__main__":
+
+    # 1: Fill password.
+    if "GNOME_KEYRING_PASSWORD" in os.environ:
+        password = os.environ["GNOME_KEYRING_PASSWORD"]
+    else:
+        password = getpass("Insert Gnome Keyring password: ")
+
+    # 2: Unlock the Gnome Keyring.
+    unlock_sync(None, password)

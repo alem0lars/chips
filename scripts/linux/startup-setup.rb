@@ -3,12 +3,12 @@ $config = "startup-setup".get_config
 _options = parse_args
 
 [
-  # basic daemons
-  -> { "start-pulseaudio-x11".run single: true, interactive: true },
-  -> { "multimonitor".run_if $config[:multimonitor], detached: true, single: true, interactive: true },
+  # Start basic daemons
+  -> { "start-pulseaudio-x11".run single: "pulseaudio", interactive: true },
   -> { "redshift".run_if $config[:redshift], detached: true, single: true, interactive: true },
   -> { "unclutter".run "-root", detached: true, single: true, interactive: true },
-  # setup desktop environment
+  # Setup desktop environment
+  -> { "multimonitor".run_if $config[:multimonitor], detached: true, single: true, interactive: true },
   -> { "dunst".run_if $config[:dunst], detached: true, single: true, interactive: true },
   -> { "taffybar".run_if $config[:taffybar], detached: true, single: true, interactive: true },
   -> {
@@ -25,7 +25,7 @@ _options = parse_args
       true
     end
   },
-  # setup lastpass
+  # Setup LastPass
   -> {
     if $config[:lastpass]
       unless lpass_logged_in?
@@ -39,7 +39,7 @@ _options = parse_args
       true
     end
   },
-  # setup ssh
+  # Setup SSH
   -> {
     ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
     if File.file?(ssh_key)
@@ -52,9 +52,9 @@ _options = parse_args
       true
     end
   },
-  # trayer apps
+  # Trayer apps
   -> { "megasync".run_if $config[:mega], detached: true, single: true },
-  # standalone apps
+  # Standalone apps
   -> { "copyq".run_if $config[:copyq], detached: true, single: true },
   -> { "trello".run_if $config[:trello], detached: true, single: true },
   -> { "toggl".run_if $config[:toggl], detached: true, single: true },
@@ -62,9 +62,35 @@ _options = parse_args
   -> { "slack".run_if $config[:slack], detached: true, single: true },
   -> { "whatsapp".run_if $config[:whatsapp], detached: true, single: true },
   -> { "telegram-desktop".run_if $config[:telegram], detached: true, single: true },
-  -> { "skypeforlinux".run_if $config[:skype], detached: true, single: true },
+  # Gnome Keyring & related apps
+  -> {
+    if $config[:gnome_keyring]
+      unless $config[:gnome_keyring][:pwd]
+        "missing password for Gnome Keyring".perr
+      end
+      $config[:gnome_keyring][:pwd].as_pwd!
+
+      status = [
+        -> {
+          ENV["GNOME_KEYRING_PASSWORD"] = $config[:gnome_keyring][:pwd]
+          status = "gnome-keyring-unlock".run interactive: true
+          ENV["GNOME_KEYRING_PASSWORD"] = nil
+          status
+        },
+        # => Standalone apps that require Gnome Keyring unlocked.
+        -> { "skypeforlinux".run_if $config[:skype], detached: true, single: true }
+      ].do_all
+
+      unless status
+        "failed to unlock gnome keyring and/or run apps depending upon it!".pwrn
+      end
+
+      status
+    end
+    true
+  },
   -> { openterm %w(weechat), run_if: $config[:weechat], title: :weechat, detached: true },
-  # => connections to remote servers
+  # => Connections to remote servers
   -> {
     if $config[:ssh]
       $config[:ssh].each do |ssh|

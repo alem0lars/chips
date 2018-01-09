@@ -245,7 +245,8 @@ module Shortcuts
     end
 
     status = false
-    if single && program_name.is_running
+    program_to_check = single.is_a?(String) ? single : program_name
+    if single && program_to_check.is_running
       "command `#{pretty_cmd.as_tok}` is already running".pinf
       status = true
     else
