@@ -76,9 +76,8 @@ _options = parse_args
           status = "gnome-keyring-unlock".run interactive: true
           ENV["GNOME_KEYRING_PASSWORD"] = nil
           status
-        },
+        }
         # => Standalone apps that require Gnome Keyring unlocked.
-        -> { "skypeforlinux".run_if $config[:skype], detached: true, single: true }
       ].do_all
 
       unless status
@@ -89,6 +88,7 @@ _options = parse_args
     end
     true
   },
+  -> { "skypeforlinux".run detached: true, single: true },
   -> { openterm %w(weechat), run_if: $config[:weechat], title: :weechat, detached: true },
   # => Connections to remote servers
   -> {

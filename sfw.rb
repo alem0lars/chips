@@ -408,7 +408,7 @@ module Shortcuts
             if dst_path.dirname.directory?
               dst_dir_path = dst_path.dirname
             else
-              return "invalid destination path `#{to.as_tok}`".perr
+              "invalid destination path `#{to.as_tok}`".perr
             end
           end
 
@@ -430,7 +430,12 @@ module Shortcuts
       if script_path.filename.end_with?("-wrapper")
         program_name = script_path.filename.gsub(/-wrapper$/, "")
         unless program_name.check_program
-          "missing program `#{program_name}`".perr exit_code: 1
+          if "missing program `#{program_name}`".pwrn ask_continue: true
+            "skipping installation of #{program_name.as_tok}".pinf
+            return
+	  else
+            "fix your installation!".perr
+	  end
         end
         "building wrapper for `#{program_name.as_tok}`".pinf
         dst_path = dst_path.dirname.join(program_name)
