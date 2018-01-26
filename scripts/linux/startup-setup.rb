@@ -65,7 +65,7 @@ _options = parse_args
   -> { "thunderbird".run_if $config[:thunderbird], detached: true, single: true },
   -> { "slack".run_if $config[:slack], detached: true, single: true },
   -> { "whatsapp".run_if $config[:whatsapp], detached: true, single: true },
-  -> { "messenger".run_if $config[:messenger], detached: true, single: true },
+  -> { "caprine".run_if $config[:caprine], detached: true, single: true },
   -> { "telegram-desktop".run_if $config[:telegram], detached: true, single: true },
   # Gnome Keyring & related apps
   -> {
