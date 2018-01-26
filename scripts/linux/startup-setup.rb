@@ -41,7 +41,8 @@ _options = parse_args
   },
   # Setup SSH
   -> {
-    "ssh-agent".run "-a", "$SSH_AUTH_SOCK", single: true, interactive: true
+    ssh_auth_sock = ENV["XDG_RUNTIME_DIR"].to_pn.expand_path.join("ssh-agent.socket")
+    "ssh-agent".run "-a", ssh_auth_sock, single: true, interactive: true
   },
   -> {
     ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
@@ -64,6 +65,7 @@ _options = parse_args
   -> { "thunderbird".run_if $config[:thunderbird], detached: true, single: true },
   -> { "slack".run_if $config[:slack], detached: true, single: true },
   -> { "whatsapp".run_if $config[:whatsapp], detached: true, single: true },
+  -> { "messenger".run_if $config[:messenger], detached: true, single: true },
   -> { "telegram-desktop".run_if $config[:telegram], detached: true, single: true },
   # Gnome Keyring & related apps
   -> {
