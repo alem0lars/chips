@@ -41,6 +41,9 @@ _options = parse_args
   },
   # Setup SSH
   -> {
+    "ssh-agent".run "-a", "$SSH_AUTH_SOCK", single: true, interactive: true
+  },
+  -> {
     ssh_key = "~/.ssh/id_rsa".to_pn.expand_path
     if File.file?(ssh_key)
       unless "ssh-add".capture("-l").split("\n").any? { |e| e.split(/\s+/)[2] == ssh_key.to_s }
