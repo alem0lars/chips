@@ -196,6 +196,16 @@ module Shortcuts
     end
   end
 
+  def tmux(*cmd, **run_args)
+    detached = run_args.delete :detached
+    args = []
+    args << "new-session"
+    args += ["-s", self.to_s.gsub(/\./, "")]
+    args << "-d" if detached
+    args += cmd
+    "tmux".run(*args, **run_args)
+  end
+
   def run_if(condition, *args, **kwargs)
     if condition
       run(*args, **kwargs)

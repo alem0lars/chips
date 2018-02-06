@@ -16,15 +16,13 @@ def fill_config!(scanner, target)
 
   $config[:targets][target] ||= {}
   $config[:targets][target][scanner] = default_config.deep_merge($config[:targets][target][scanner] || {})
-  unless scanner.check_program || $simulate
-    "skipping scanner #{scanner.as_tok}: program not found".pwrn ask_continue: true
-    $config[:targets][target][scanner][:enabled] = false
-  end
 end
 
 # ─────────────────────────────────────────────────────────────── Entry-Point ──
 
 [
+  -> () { "tmux".check_program },
+  -> () { "docker".check_program },
   -> () {
     # Parse config.
     $config = "spawn-va".get_config || {}
@@ -87,36 +85,62 @@ end
     $config[:output_dir] = Pathname.new($options[:output_dir])
     $config[:output_dir].mkpath
 
+    $config[:targets].each do |target, scanners|
+      scanners.each do |scanner, config|
+        config[:output_dir] = $config[:output_dir].join("#{target}-#{scanner}")
+      end
+      scanners.select { |s, c| c[:enabled] }.each do |scanner, config|
+        config[:output_dir].mkpath
+      end
+    end
+
     true
   },
   -> () { # Perform VA
     $config[:targets].each do |target, config|
       if config[:nikto][:enabled]
         extension = config[:nikto][:format] || "unknown"
-        "nikto".run "-h", target,
-                    "-Cgidirs",
-                    "-plugins".arg_valued(config[:nikto][:plugins]),
-                    "-evasion".arg_valued(config[:nikto][:evasion]),
-                    "-mutate".arg_valued(config[:nikto][:mutate]),
-                    "-tuning".arg_valued(config[:nikto][:tuning]),
-                    "-update".arg_if(config[:nikto][:update]),
-                    "-F".arg_valued(config[:nikto][:format]),
-                    "-output", report_name(:nikto, target, extension),
-                    interactive: true
+        "va-#{target}-nikto".tmux "docker", "run",
+          "-it",
+          "--rm",
+          "-v", ".:#{config[:output_dir]}",
+          "frapsoft/nikto",
+          "-host", target,
+          "-Cgidirs",
+          "-plugins".arg_valued(config[:nikto][:plugins]),
+          "-evasion".arg_valued(config[:nikto][:evasion]),
+          "-mutate".arg_valued(config[:nikto][:mutate]),
+          "-tuning".arg_valued(config[:nikto][:tuning]),
+          "-update".arg_if(config[:nikto][:update]),
+          "-F".arg_valued(config[:nikto][:format]),
+          "-output", report_name(:nikto, target, extension),
+          interactive: true,
+          detached: true
       end
 
       if config[:wpscan][:enabled]
-        "docker".run "run", "-it", "--rm", "wpscanteam/wpscan",
-                     "--url", target,
-                     "--wordlist".arg_valued(config[:wpscan][:wordlist]),
-                     "--log", report_name(:wpscan, target, :txt),
-                     interactive: true
+        "va-#{target}-wpscan".tmux "docker", "run",
+          "-it",
+          "--rm",
+          "-v", ".:#{config[:output_dir]}",
+          "wpscanteam/wpscan",
+          "--url", target,
+          "--wordlist".arg_valued(config[:wpscan][:wordlist]),
+          "--log", report_name(:wpscan, target, :txt),
+          interactive: true,
+          detached: true
       end
 
       if config[:golismero][:enabled]
-        "golismero".run "scan", target,
-                        "-o", report_name(:golismero, target, :json),
-                        interactive: true
+        "va-#{target}-golismero".tmux "docker", "run",
+          "-it",
+          "--rm",
+          "-v", ".:#{config[:output_dir]}",
+          "jsitech/golismero",
+          "scan", target,
+          "-o", report_name(:golismero, target, :json),
+          interactive: true,
+          detached: true
       end
     end
 
