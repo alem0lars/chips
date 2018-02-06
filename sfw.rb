@@ -11,6 +11,7 @@ require "shellwords"
 require "yaml"
 require "tempfile"
 require "pp"
+require "ap" rescue nil
 
 $exit_code = nil
 
@@ -221,14 +222,14 @@ module Shortcuts
           dir: nil, msg: nil, verbose: true, simulate: false,
           detached: false, single: false, ignore_status: false, output: $stdout,
           interactive: false, retry_on_error: false)
-    def format_args(args, pretty: false)
-      if args.is_a? Array
-        args.map { |arg| format_args(arg, pretty: pretty) }.join(" ")
+    def format_args(_args, pretty: false)
+      if _args.is_a? Array
+        _args.map { |arg| format_args(arg, pretty: pretty) }.join(" ")
       else
         if pretty
-          arg.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
+          _args.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
         else
-          arg.to_s.strip.gsub(/(?:H-)+(.*)(?:-H)+/, "\1").escape
+          _args.to_s.strip.gsub(/(?:H-)+(.*)(?:-H)+/, "\1").escape
         end
       end
     end

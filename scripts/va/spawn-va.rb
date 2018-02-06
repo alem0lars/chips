@@ -11,17 +11,12 @@ def fill_config!(scanner, target)
   if block_given?
     default_config = yield
   else
-    default_config = $config[:default_scanners_config]
+    default_config = $config[:default_scanners_config][scanner] || {}
   end
 
-  $config[:targets][target] = {}
-
+  $config[:targets][target] ||= {}
   $config[:targets][target][scanner] = default_config.deep_merge($config[:targets][target][scanner] || {})
-  if scanner.check_program
-    unless $config[:targets][target][scanner][:enabled]
-      $config[:targets][target].delete(scanner)
-    end
-  else
+  unless scanner.check_program || $simulate
     "skipping scanner #{scanner.as_tok}: program not found".pwrn ask_continue: true
     $config[:targets][target][scanner][:enabled] = false
   end
@@ -70,13 +65,12 @@ end
     true
   },
   -> () { # Perform VA
-    puts $config
     $config[:targets].each do |target, config|
       if config[:nikto][:enabled]
         extension = config[:nikto][:format] || "unknown"
         "nikto".run "-h", target,
                     "-Cgidirs",
-                    "-plugins".arg_values(config[:nikto][:plugins]),
+                    "-plugins".arg_valued(config[:nikto][:plugins]),
                     "-evasion".arg_valued(config[:nikto][:evasion]),
                     "-mutate".arg_valued(config[:nikto][:mutate]),
                     "-tuning".arg_valued(config[:nikto][:tuning]),
