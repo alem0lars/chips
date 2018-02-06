@@ -200,8 +200,8 @@ module Shortcuts
     detached = run_args.delete :detached
     args = []
     args << "new-session"
-    args += ["-s", self.to_s.gsub(/\./, "")]
     args << "-d" if detached
+    args += ["-s", self.to_s.gsub(/\./, "")]
     args += cmd
     "tmux".run(*args, **run_args)
   end
