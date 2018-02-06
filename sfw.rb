@@ -190,7 +190,7 @@ module Shortcuts
   end
 
   def is_running(**run_args)
-    if "pgrep".check_program || "`pgrep` is needed".perr
+    if "pgrep".check_program || "#{"pgrep".as_tok} is needed".perr
       "pgrep".capture(self.to_s, **run_args).length > 0
     end
   end
@@ -203,10 +203,36 @@ module Shortcuts
     end
   end
 
+  def arg_if(arg_value)
+    arg_name = self.to_s
+    if arg_value
+      arg_name
+    else
+      []
+    end
+  end
+
+  def arg_valued(arg_value)
+    arg_name = self.to_s
+    arg_value ? [arg_name, arg_value] : []
+  end
+
   def run(*args,
           dir: nil, msg: nil, verbose: true, simulate: false,
           detached: false, single: false, ignore_status: false, output: $stdout,
           interactive: false, retry_on_error: false)
+    def format_args(args, pretty: false)
+      if args.is_a? Array
+        args.map { |arg| format_args(arg, pretty: pretty) }.join(" ")
+      else
+        if pretty
+          arg.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
+        else
+          arg.to_s.strip.gsub(/(?:H-)+(.*)(?:-H)+/, "\1").escape
+        end
+      end
+    end
+
     simulate ||= $simulate
 
     program_name = self.to_s
@@ -214,14 +240,10 @@ module Shortcuts
     pretty_cmd = program_name.dup
     unless args.empty?
       cmd << " "
-      cmd << args.map do |arg|
-        arg.to_s.strip.gsub(/(?:H-)+(.*)(?:-H)+/, '\1').escape
-      end.join(" ")
+      cmd << format_args(args)
 
       pretty_cmd << " "
-      pretty_cmd << args.map do |arg|
-        arg.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
-      end.join(" ")
+      pretty_cmd << format_args(args, pretty: true)
     end
 
     handle_output = ->(output_data) do
@@ -433,9 +455,9 @@ module Shortcuts
           if "missing program `#{program_name}`".pwrn ask_continue: true
             "skipping installation of #{program_name.as_tok}".pinf
             return
-	  else
+          else
             "fix your installation!".perr
-	  end
+          end
         end
         "building wrapper for `#{program_name.as_tok}`".pinf
         dst_path = dst_path.dirname.join(program_name)
