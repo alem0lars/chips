@@ -29,6 +29,7 @@ end
     # Parse config.
     $config = "spawn-va".get_config || {}
 
+    $config[:supported_scanners] = %i(nikto wpscan golismero)
     $config[:targets] ||= {}
     $config[:default_scanners_config] ||= {}
 
@@ -41,6 +42,13 @@ end
                 "Perform VA scan to provided targets") do |targets|
         opts[:targets] = targets
       end
+
+      parser.on("-n", "--scanners x,y,z", Array,
+                "Run only the specified scanners " +
+                "(available: #{$config[:supported_scanners].as_tok})") do |s|
+        opts[:scanners] = s
+      end
+
       parser.on("-o", "--output-dir OUTPUT_DIR",
                 "Output directory where reports should be saved") do |out_dir|
         opts[:output_dir] = out_dir
@@ -50,13 +58,30 @@ end
     # Check required arguments.
     "invalid output directory".perr exit_code: 1 unless $options[:output_dir]
     "invalid targets".perr exit_code: 1 unless $options[:targets]
+    if $options[:scanners]
+      $options[:scanners] = $options[:scanners].map { |s| s.to_sym }
+      $options[:scanners].each do |scanner|
+        unless $config[:supported_scanners].include? scanner
+          "Invalid scanner #{scanner.as_tok}: not supported".perr exit_code: 1
+        end
+      end
+    end
 
     true
   },
   -> () { # Normalize config
     $options[:targets].each do |target|
-      fill_config! :nikto, target
-      fill_config! :wpscan, target
+      $config[:supported_scanners].each do |scanner|
+        fill_config! scanner, target
+      end
+    end
+
+    if $options[:scanners]
+      $config[:targets].each do |target, scanners|
+        scanners.each do |scanner, config|
+          config[:enabled] = $options[:scanners].include? scanner
+        end
+      end
     end
 
     $config[:output_dir] = Pathname.new($options[:output_dir])
@@ -76,11 +101,22 @@ end
                     "-tuning".arg_valued(config[:nikto][:tuning]),
                     "-update".arg_if(config[:nikto][:update]),
                     "-F".arg_valued(config[:nikto][:format]),
-                    "-output", report_name("nikto", target, extension)
+                    "-output", report_name(:nikto, target, extension),
+                    interactive: true
       end
 
       if config[:wpscan][:enabled]
-        "wpscan".run "--url", target
+        "docker".run "run", "-it", "--rm", "wpscanteam/wpscan",
+                     "--url", target,
+                     "--wordlist".arg_valued(config[:wpscan][:wordlist]),
+                     "--log", report_name(:wpscan, target, :txt),
+                     interactive: true
+      end
+
+      if config[:golismero][:enabled]
+        "golismero".run "scan", target,
+                        "-o", report_name(:golismero, target, :json),
+                        interactive: true
       end
     end
 
