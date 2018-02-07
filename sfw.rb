@@ -198,12 +198,26 @@ module Shortcuts
 
   def tmux(*cmd, **run_args)
     detached = run_args.delete :detached
+    manual_exit = run_args.delete :manual_exit
     args = []
     args << "new-session"
     args << "-d" if detached
     args += ["-s", self.to_s.gsub(/\./, "")]
-    args += cmd
-    "tmux".run(*args, **run_args)
+    if manual_exit
+      args << "bash"
+      args << "-c"
+      args << [
+        cmd.map { |e| e.escape }.join(" "),
+        "echo Hit Ctrl+D to exit",
+        "read"
+      ].join("; ")
+    else
+      args += cmd
+    end
+
+    with_env TMUX: nil do
+      "tmux".run(*args, **run_args)
+    end
   end
 
   def run_if(condition, *args, **kwargs)
@@ -753,6 +767,27 @@ def openterm(cmd, run_if: true, title: nil, tmux: true, detached: false)
     true
   end
 
+end
+
+def with_env(**kwargs)
+  "No block given".perr exit_code: 1 unless block_given?
+
+  # Save
+  old_values = {}
+  kwargs.each do |key, value|
+    key = key.to_s
+    old_values[key] = ENV[key]
+    ENV[key] = value
+  end
+
+  # Evaluation with modified environment
+  result = yield
+
+  # Restore
+  old_values.each { |key, value| ENV[key] = value }
+
+  # Return result
+  result
 end
 
 # }}}

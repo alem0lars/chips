@@ -15,7 +15,24 @@ def fill_config!(scanner, target)
   end
 
   $config[:targets][target] ||= {}
-  $config[:targets][target][scanner] = default_config.deep_merge($config[:targets][target][scanner] || {})
+  $config[:targets][target][scanner] = default_config.deep_merge(
+    $config[:targets][target][scanner] || {})
+end
+
+def targets_for_service(service_name)
+  $config[:targets].select do |target, services|
+    services.any? do |service, config|
+      service == service_name && config[:enabled]
+    end
+  end
+end
+
+def session_name(service, target=nil)
+  elems = []
+  elems << ($config[:prefix] || "spawnva")
+  elems << service
+  elems << target if target
+  elems.join("-")
 end
 
 # ─────────────────────────────────────────────────────────────── Entry-Point ──
@@ -27,9 +44,15 @@ end
     # Parse config.
     $config = "spawn-va".get_config || {}
 
-    $config[:supported_scanners] = %i(nikto wpscan golismero)
     $config[:targets] ||= {}
     $config[:default_scanners_config] ||= {}
+    $config[:supported_scanners] = %i[
+      nikto
+      wpscan
+      golismero
+      metasploit
+      arachni
+    ]
 
     true
   },
@@ -50,6 +73,11 @@ end
       parser.on("-o", "--output-dir OUTPUT_DIR",
                 "Output directory where reports should be saved") do |out_dir|
         opts[:output_dir] = out_dir
+      end
+
+      parser.on("-p", "--prefix PREFIX",
+                "Prefix to use for tmux sessions") do |prefix|
+        opts[:prefix] = prefix
       end
     end
 
@@ -77,7 +105,9 @@ end
     if $options[:scanners]
       $config[:targets].each do |target, scanners|
         scanners.each do |scanner, config|
-          config[:enabled] = $options[:scanners].include? scanner
+          unless config[:enabled] == false # explicit `false` forces disable
+            config[:enabled] = $options[:scanners].include? scanner
+          end
         end
       end
     end
@@ -87,61 +117,113 @@ end
 
     $config[:targets].each do |target, scanners|
       scanners.each do |scanner, config|
-        config[:output_dir] = $config[:output_dir].join("#{target}-#{scanner}")
+        dir_name = "spawn-va|target=#{target}|scanner=#{scanner}"
+        config[:output_dir] = $config[:output_dir].join(dir_name)
       end
       scanners.select { |s, c| c[:enabled] }.each do |scanner, config|
         config[:output_dir].mkpath
       end
     end
 
+    $config[:prefix] = $options[:prefix]
+
     true
   },
   -> () { # Perform VA
-    $config[:targets].each do |target, config|
-      if config[:nikto][:enabled]
-        extension = config[:nikto][:format] || "unknown"
-        "va-#{target}-nikto".tmux "docker", "run",
+    $config[:targets].each do |target, scanners|
+      if scanners[:nikto][:enabled]
+        config = scanners[:nikto]
+        extension = config[:format] || "unknown"
+        session_name(:nikto, target).tmux "docker", "run",
           "-it",
           "--rm",
-          "-v", ".:#{config[:output_dir]}",
+          "--mount", "type=bind,source=#{config[:output_dir]},target=/boot",
           "frapsoft/nikto",
           "-host", target,
           "-Cgidirs",
-          "-plugins".arg_valued(config[:nikto][:plugins]),
-          "-evasion".arg_valued(config[:nikto][:evasion]),
-          "-mutate".arg_valued(config[:nikto][:mutate]),
-          "-tuning".arg_valued(config[:nikto][:tuning]),
-          "-update".arg_if(config[:nikto][:update]),
-          "-F".arg_valued(config[:nikto][:format]),
-          "-output", report_name(:nikto, target, extension),
+          "-plugins".arg_valued(config[:plugins]),
+          "-evasion".arg_valued(config[:evasion]),
+          "-mutate".arg_valued(config[:mutate]),
+          "-tuning".arg_valued(config[:tuning]),
+          "-update".arg_if(config[:update]),
+          "-F".arg_valued(config[:format]),
+          "-output", "/boot".to_pn.join(report_name(:nikto, target, extension)),
           interactive: true,
-          detached: true
+          detached: true,
+          manual_exit: true
       end
 
-      if config[:wpscan][:enabled]
-        "va-#{target}-wpscan".tmux "docker", "run",
+      if scanners[:wpscan][:enabled]
+        config = scanners[:wpscan]
+        session_name(:wpscan, target).tmux "docker", "run",
           "-it",
           "--rm",
-          "-v", ".:#{config[:output_dir]}",
+          "--mount", "type=bind,source=#{config[:output_dir]},target=/boot",
           "wpscanteam/wpscan",
           "--url", target,
-          "--wordlist".arg_valued(config[:wpscan][:wordlist]),
-          "--log", report_name(:wpscan, target, :txt),
+          "--wordlist".arg_valued(config[:wordlist]),
+          "--log", "/boot".to_pn.join(report_name(:wpscan, target, :txt)),
           interactive: true,
-          detached: true
+          detached: true,
+          manual_exit: true
       end
 
-      if config[:golismero][:enabled]
-        "va-#{target}-golismero".tmux "docker", "run",
+      if scanners[:golismero][:enabled]
+        config = scanners[:golismero]
+        session_name(:golismero, target).tmux "docker", "run",
           "-it",
           "--rm",
-          "-v", ".:#{config[:output_dir]}",
+          "--mount", "type=bind,source=#{config[:output_dir]},target=/boot",
           "jsitech/golismero",
           "scan", target,
-          "-o", report_name(:golismero, target, :json),
+          "-o", "/boot".to_pn.join(report_name(:golismero, target, :json)),
           interactive: true,
-          detached: true
+          detached: true,
+          manual_exit: true
       end
+    end
+
+    unless targets_for_service(:metasploit).empty?
+      config_dir = $config[:output_dir].join("metasploit", "config")
+      config_dir.mkpath
+      data_dir = $config[:output_dir].join("metasploit", "data")
+      data_dir.mkpath
+
+      session_name(:metasploit).tmux "docker", "run",
+        "-it",
+        "--rm",
+        "-p", "433:433",
+        "-v", "/root/.msf4:#{config_dir}",
+        "-v", "/tmp/data:#{data_dir}",
+        "remnux/metasploit",
+        "/bin/bash", "-c", [
+          "source /usr/local/rvm/scripts/rvm",
+          "/etc/init.d/postgresql start",
+          "/opt/msf/msfupdate --git-branch master",
+          "msfconsole -x 'set RHOSTS #{targets_for_service(:metasploit).keys.join(" ")}'",
+        ].join("; "),
+        interactive: true,
+        detached: true,
+        manual_exit: true
+    end
+
+    unless targets_for_service(:arachni).empty?
+=begin
+      config_dir = $config[:output_dir].join("arachni", "config")
+      config_dir.mkpath
+      data_dir = $config[:output_dir].join("arachni", "data")
+      data_dir.mkpath
+=end
+
+      session_name(:arachni).tmux "docker", "run",
+        "-it",
+        "--rm",
+        "-p", "222:22",
+        "-p", "7331:7331",
+        "arachni/arachni",
+        interactive: true,
+        detached: true,
+        manual_exit: true
     end
 
     true
