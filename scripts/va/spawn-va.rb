@@ -52,6 +52,7 @@ end
       golismero
       metasploit
       arachni
+      wapiti
     ]
 
     true
@@ -148,6 +149,22 @@ end
           "-update".arg_if(config[:update]),
           "-F".arg_valued(config[:format]),
           "-output", "/boot".to_pn.join(report_name(:nikto, target, extension)),
+          interactive: true,
+          detached: true,
+          manual_exit: true
+      end
+
+      if scanners[:wapiti][:enabled]
+        config = scanners[:wapiti]
+        extension = config[:format] || "unknown"
+        session_name(:wapiti, target).tmux "docker", "run",
+          "-it",
+          "--rm",
+          "--mount", "type=bind,source=#{config[:output_dir]},target=/boot",
+          "k0st/alpine-wapiti",
+          target,
+          "-f".arg_valued(config[:format]),
+          "-o", "/boot".to_pn.join(report_name(:wapiti, target, extension)),
           interactive: true,
           detached: true,
           manual_exit: true

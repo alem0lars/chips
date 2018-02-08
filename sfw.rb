@@ -210,7 +210,7 @@ module Shortcuts
       args << "bash"
       args << "-c"
       args << [
-        cmd.map { |e| e.escape }.join(" "),
+        format_args(cmd),
         "echo Hit Ctrl+D to exit",
         "read"
       ].join("; ")
@@ -249,18 +249,6 @@ module Shortcuts
           dir: nil, msg: nil, verbose: true, simulate: false,
           detached: false, single: false, ignore_status: false, output: $stdout,
           interactive: false, retry_on_error: false)
-    def format_args(_args, pretty: false)
-      if _args.is_a? Array
-        _args.map { |arg| format_args(arg, pretty: pretty) }.join(" ")
-      else
-        if pretty
-          _args.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
-        else
-          _args.to_s.strip.gsub(/(?:H-)+(.*)(?:-H)+/, "\1").escape
-        end
-      end
-    end
-
     simulate ||= $simulate
 
     program_name = self.to_s
@@ -794,3 +782,17 @@ def with_env(**kwargs)
 end
 
 # }}}
+
+def format_args(args, pretty: false)
+  if args.is_a? Array
+    args.map { |arg| format_args(arg, pretty: pretty) }.
+         reject(&:empty?).
+         join(" ")
+  else
+    if pretty
+      args.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
+    else
+      args.to_s.strip.gsub(/(?:H-)+(.*)(?:-H)+/, "\1").escape
+    end
+  end
+end
