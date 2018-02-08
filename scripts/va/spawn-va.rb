@@ -38,8 +38,8 @@ end
 # ─────────────────────────────────────────────────────────────── Entry-Point ──
 
 [
-  -> () { "tmux".check_program },
-  -> () { "docker".check_program },
+  -> () { "tmux".check_program! },
+  -> () { "docker".check_program! },
   -> () {
     # Parse config.
     $config = "spawn-va".get_config || {}
