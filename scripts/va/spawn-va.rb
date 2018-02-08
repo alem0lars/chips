@@ -225,13 +225,14 @@ end
         manual_exit: true
     end
 
-    unless targets_for_service(:arachni).empty?
+    # TODO at the moment doesn't run the command, instead it should do!
+    return "not implemented yet" unless targets_for_service(:arachni).empty?
 =begin
-      config_dir = $config[:output_dir].join("arachni", "config")
-      config_dir.mkpath
-      data_dir = $config[:output_dir].join("arachni", "data")
-      data_dir.mkpath
-=end
+    unless targets_for_service(:arachni).empty?
+      # config_dir = $config[:output_dir].join("arachni", "config")
+      # config_dir.mkpath
+      # data_dir = $config[:output_dir].join("arachni", "data")
+      # data_dir.mkpath
 
       session_name(:arachni).tmux "docker", "run",
         "-it",
@@ -243,6 +244,7 @@ end
         detached: true,
         manual_exit: true
     end
+=end
 
     true
   }
