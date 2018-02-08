@@ -202,7 +202,7 @@ module Shortcuts
     args = []
     args << "new-session"
     args << "-d" if detached
-    args += ["-s", self.to_s.gsub(/\./, "")]
+    args += ["-s", self.to_s.gsub(/[.:\/]/, "")]
     if manual_exit
       args << "bash"
       args << "-c"

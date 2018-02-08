@@ -2,7 +2,7 @@
 
 def report_name(scanner_name, target, extension)
   now = Time.now.strftime("%Y.%m.%d-%H.%M.%S")
-  "report|scanner=#{scanner_name}|target=#{target}|date=#{now}.#{extension}"
+  "report|scanner=#{scanner_name}|target=#{target}|date=#{now}.#{extension}".gsub(/[\/]/, "")
 end
 
 def fill_config!(scanner, target)
@@ -117,7 +117,7 @@ end
 
     $config[:targets].each do |target, scanners|
       scanners.each do |scanner, config|
-        dir_name = "spawn-va|target=#{target}|scanner=#{scanner}"
+        dir_name = "spawn-va|target=#{target}|scanner=#{scanner}".gsub(/[\/]/, "")
         config[:output_dir] = $config[:output_dir].join(dir_name)
       end
       scanners.select { |s, c| c[:enabled] }.each do |scanner, config|
@@ -162,6 +162,7 @@ end
           "wpscanteam/wpscan",
           "--url", target,
           "--wordlist".arg_valued(config[:wordlist]),
+          "--random-agent".arg_if(config[:random_agent]),
           "--log", "/boot".to_pn.join(report_name(:wpscan, target, :txt)),
           interactive: true,
           detached: true,
