@@ -2,7 +2,7 @@ config = "git-purge-file".get_config
 
 [
   -> () { # check external requirements
-    "missing program `git`".perr unless "git".check_program
+    "git".check_program!
     true
   },
   -> () { # arguments normalization

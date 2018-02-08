@@ -1,6 +1,6 @@
 [
-  -> () { "xdotool".check_program },
-  -> () { "wmctrl".check_program },
+  -> () { "xdotool".check_program! },
+  -> () { "wmctrl".check_program! },
   -> () {
     # Parse options.
     $options = parse_args do |parser, opts|

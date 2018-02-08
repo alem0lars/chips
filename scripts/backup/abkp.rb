@@ -2,7 +2,7 @@ config = "abkp".get_config
 
 [
   -> () { # check external requirements
-    "missing program `attic`".perr unless "attic".check_program
+    "attic".check_program!
     true
   },
   -> () { # arguments normalization
