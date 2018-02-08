@@ -40,8 +40,7 @@ end
 [
   -> () { "tmux".check_program! },
   -> () { "docker".check_program! },
-  -> () {
-    # Parse config.
+  -> () { # Parse config
     $config = "spawn-va".get_config || {}
 
     $config[:targets] ||= {}
@@ -57,9 +56,8 @@ end
 
     true
   },
-  -> () {
-    # Parse options.
-    $options = parse_args do |parser, opts|
+  -> () { # Parse options
+    $options = parse_args(mandatory: %i(targets output_dir)) do |parser, opts|
       parser.on("-t", "--targets x,y,z", Array,
                 "Perform VA scan to provided targets") do |targets|
         opts[:targets] = targets
@@ -81,10 +79,8 @@ end
         opts[:prefix] = prefix
       end
     end
-
-    # Check required arguments.
-    "invalid output directory".perr exit_code: 1 unless $options[:output_dir]
-    "invalid targets".perr exit_code: 1 unless $options[:targets]
+  },
+  -> () { # Normalize config
     if $options[:scanners]
       $options[:scanners] = $options[:scanners].map { |s| s.to_sym }
       $options[:scanners].each do |scanner|
@@ -94,9 +90,6 @@ end
       end
     end
 
-    true
-  },
-  -> () { # Normalize config
     $options[:targets].each do |target|
       $config[:supported_scanners].each do |scanner|
         fill_config! scanner, target
@@ -248,4 +241,4 @@ end
 
     true
   }
-].do_all auto_exit_code: 1
+].do_all auto_exit_code: true

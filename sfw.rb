@@ -700,8 +700,9 @@ def uname
 end
 
 # parse commandline arguments
-def parse_args(simulate_enabled: true)
+def parse_args(mandatory: %i(), simulate_enabled: true)
   options = {}
+
   parser = OptionParser.new do |p|
     if simulate_enabled
       p.on("-s", "--[no-]simulate", "run in simulate mode") do |simulate|
@@ -717,11 +718,27 @@ def parse_args(simulate_enabled: true)
       exit
     end
   end
+
+  # Perform parsing
   parser.parse!
+
+  # Ensure mandatory arguments are present
+  mandatory.each do |mandatory_arg_name|
+    unless options.key? mandatory_arg_name
+      "Missing required argument #{mandatory_arg_name.as_tok}".perr
+      return nil
+    end
+  end
+
+  # Add parser to returned options for convenience
   options[:parser] = parser
+
+  # Add `phelp` function to returned options, in order to allow caller to print
+  # the arguments help
   def options.phelp
     self[:parser].to_s.pinf
   end
+
   options
 end
 
@@ -795,4 +812,63 @@ def format_args(args, pretty: false)
       args.to_s.strip.gsub(/(?:H-)+(.*)(?:-H)+/, "\1").escape
     end
   end
+end
+
+def render_dir(template_dir, context, output_dir,
+               include_regex: nil,
+               templatized_regex: nil,
+               verbose: false)
+  template_dir = template_dir.expand_path
+  output_dir = output_dir.expand_path
+
+  Pathname.glob(template_dir.join("**", "*")) do |src_path|
+    src_rel_path = src_path.relative_path_from(template_dir)
+    dst_path = output_dir.join(src_rel_path)
+
+    next if src_path.directory? # skip directories
+
+    if include_regex.nil? || src_rel_path.to_s =~ include_regex
+      # 1: Create parent directory of destination file
+      begin
+        dst_path.dirname.mkpath unless dst_path.dirname.directory?
+      rescue Exception => error
+        if "Failed to create directory #{dst_path.dirname.as_tok}: #{error}".pwrn ask_continue: true
+          next
+        else
+          return
+        end
+      else
+        "[#{"mkdir".as_tok}] #{dst_path.dirname.as_tok}".psuc if verbose
+      end
+
+      # 2: Compute file content
+      is_templatized = templatized_regex.nil? || src_rel_path.to_s =~ templatized_regex
+      if is_templatized
+        dst_content = ErbRenderer.new(context).render(src_path.read)
+      else
+        dst_content = src_path.read
+      end
+
+      # 3: Copy file
+      begin
+        dst_path.write(dst_content)
+      rescue Exception => error
+        if "Failed to copy  #{src_path.as_tok} to #{dst_path.as_tok}: #{error}".pwrn ask_continue: true
+          next
+        else
+          return
+        end
+      else
+        if is_templatized
+          "[#{"generate".as_tok}] #{src_path.as_tok} → #{dst_path.as_tok}".psuc if verbose
+        else
+          "[#{"copy".as_tok}] #{src_path.as_tok} → #{dst_path.as_tok}".psuc if verbose
+        end
+      end
+    else
+      "[#{"skip".as_tok}] #{src_path.as_tok}".pinf if verbose
+    end
+  end
+
+  true
 end
