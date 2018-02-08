@@ -229,4 +229,4 @@ end
 
     true
   }
-].do_all
+].do_all auto_exit_code: 1

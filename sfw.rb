@@ -11,7 +11,10 @@ require "shellwords"
 require "yaml"
 require "tempfile"
 require "pp"
-require "ap" rescue nil
+begin
+  require "ap"
+rescue LoadError
+end
 
 $exit_code = nil
 
