@@ -10,10 +10,17 @@
                 "Template file for generating the report") do |template|
         opts[:template] = template
       end
-      parser.on("-d", "--context CONTEXT",
+
+      parser.on("-r", "--resources RESOURCES",
+                "Directory that holds the report resources") do |resources|
+        opts[:resources] = resources
+      end
+
+      parser.on("-c", "--context CONTEXT",
                 "Context to be used as template's context") do |context|
         opts[:context] = context
       end
+
       parser.on("-o", "--output OUTPUT",
                 "Path for the generated report") do |output|
         opts[:output] = output
@@ -22,6 +29,7 @@
   },
   -> () { # Normalize config
     $config[:template_dir] = $options[:template].to_pn
+    $config[:resources_dir] = $options[:resources].to_pn if $options[:resources]
     $config[:context_file] = $options[:context].to_pn
     $config[:output_file] = $options[:output].to_pn
 
@@ -31,6 +39,18 @@
           "Using template directory at path #{$config[:template_dir].as_tok}".pinf
         else
           "Invalid template directory at path #{config[:template_dir].as_tok}: not a directory".perr
+        end
+      },
+      -> () {
+        if $config[:resources_dir]
+          if $config[:resources_dir].directory?
+            "Using resources directory at path #{$config[:resources_dir].as_tok}".pinf
+          else
+            "Invalid resources directory at path #{config[:resources_dir].as_tok}: not a directory".perr
+          end
+        else
+          "No resources will be available for use inside the report".pwrn
+          true
         end
       },
       -> () {
@@ -68,14 +88,20 @@
       return [
         -> () {
           render_dir($config[:template_dir],
-                     { context: $config[:context] },
                      tmp_dir,
+                     context: { context: $config[:context] },
                      templatized_regex: /\.tex$/,
+                     verbose: true)
+        },
+        -> () {
+          render_dir($config[:resources_dir],
+                     tmp_dir.join("resources"),
                      verbose: true)
         },
         -> () {
           tmp_dir.cd do
             "latexmk".run "-pdf", "-xelatex",
+                          "-latexoption=-shell-escape",
                           tmp_dir.join("main.tex"),
                           interactive: true
           end

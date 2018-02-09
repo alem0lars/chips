@@ -822,7 +822,8 @@ def format_args(args, pretty: false)
   end
 end
 
-def render_dir(template_dir, context, output_dir,
+def render_dir(template_dir, output_dir,
+               context: {},
                include_regex: nil,
                templatized_regex: nil,
                verbose: false)
@@ -850,7 +851,7 @@ def render_dir(template_dir, context, output_dir,
       end
 
       # 2: Compute file content
-      is_templatized = templatized_regex.nil? || src_rel_path.to_s =~ templatized_regex
+      is_templatized = templatized_regex && src_rel_path.to_s =~ templatized_regex
       if is_templatized
         dst_content = ErbRenderer.new(context).render(src_path.read)
       else
