@@ -381,6 +381,14 @@ module Shortcuts
     Pathname.new(self.to_s).sub_ext("").basename.to_s
   end
 
+  def cd
+    status = nil
+    FileUtils.cd(self.to_s) do
+      status = yield
+    end
+    status
+  end
+
   # }}}
 
   # {{{ misc

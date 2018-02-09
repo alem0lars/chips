@@ -1,5 +1,6 @@
-
 [
+  -> () { "texliveonfly".check_program },
+  -> () { "latexmk".check_program },
   -> () { # Parse config
     $config = "report-va".get_config || {}
   },
@@ -49,7 +50,12 @@
       },
       -> () {
         if $config[:output_file].exist?
-          "Invalid report path #{config[:output_file].as_tok}: already exists".perr
+          if "Path for output file #{$config[:output_file].as_tok} already exists".pwrn ask_continue: true
+            $config[:output_file].rmtree
+            "Report will be generated at path #{$config[:output_file].as_tok}".pinf
+          else
+            "Invalid report path #{$config[:output_file].as_tok}: already exists".perr
+          end
         else
           "Report will be generated at path #{$config[:output_file].as_tok}".pinf
         end
@@ -59,11 +65,27 @@
   -> () {
     Dir.mktmpdir("report-va-") do |tmp_dir|
       tmp_dir = tmp_dir.to_pn
-      return render_dir($config[:template_dir],
-                        { context: $config[:context] },
-                        tmp_dir,
-                        templatized_regex: /\.tex$/,
-                        verbose: true)
+      return [
+        -> () {
+          render_dir($config[:template_dir],
+                     { context: $config[:context] },
+                     tmp_dir,
+                     templatized_regex: /\.tex$/,
+                     verbose: true)
+        },
+        -> () {
+          tmp_dir.cd do
+            "latexmk".run "-pdf", "-xelatex",
+                          tmp_dir.join("main.tex"),
+                          interactive: true
+          end
+        },
+        -> () {
+          FileUtils.cp(tmp_dir.join("main.pdf"), $config[:output_file])
+          "Created output report at #{$config[:output_file].as_tok}".psuc
+          true
+        }
+      ].do_all
     end
   }
 ].do_all auto_exit_code: true
