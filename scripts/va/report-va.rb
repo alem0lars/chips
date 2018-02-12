@@ -25,6 +25,10 @@
                 "Path for the generated report") do |output|
         opts[:output] = output
       end
+
+      parser.on("-C", "--[no-]cleanup", "Cleanup generated LaTeX") do |cleanup|
+        opts[:cleanup] = cleanup
+      end
     end
   },
   -> () { # Normalize config
@@ -32,6 +36,7 @@
     $config[:resources_dir] = $options[:resources].to_pn if $options[:resources]
     $config[:context_file] = $options[:context].to_pn
     $config[:output_file] = $options[:output].to_pn
+    $config[:cleanup] = $options[:cleanup]
 
     [
       -> () {
@@ -83,35 +88,36 @@
     ].do_all
   },
   -> () {
-    Dir.mktmpdir("report-va-") do |tmp_dir|
-      tmp_dir = tmp_dir.to_pn
-      return [
-        -> () {
-          render_dir($config[:template_dir],
-                     tmp_dir,
-                     context: { context: $config[:context] },
-                     templatized_regex: /\.tex$/,
-                     verbose: true)
-        },
-        -> () {
-          render_dir($config[:resources_dir],
-                     tmp_dir.join("resources"),
-                     verbose: true)
-        },
-        -> () {
-          tmp_dir.cd do
-            "latexmk".run "-pdf", "-xelatex",
-                          "-latexoption=-shell-escape",
-                          tmp_dir.join("main.tex"),
-                          interactive: true
-          end
-        },
-        -> () {
-          FileUtils.cp(tmp_dir.join("main.pdf"), $config[:output_file])
-          "Created output report at #{$config[:output_file].as_tok}".psuc
-          true
-        }
-      ].do_all
-    end
+    tmp_dir = Dir.mktmpdir("report-va-").to_pn
+    "Using directory #{tmp_dir.as_tok}".pinf
+    status = [
+      -> () {
+        render_dir($config[:template_dir],
+                   tmp_dir,
+                   context: { context: $config[:context] },
+                   templatized_regex: /\.tex$/,
+                   verbose: true)
+      },
+      -> () {
+        render_dir($config[:resources_dir],
+                   tmp_dir.join("resources"),
+                   verbose: true)
+      },
+      -> () {
+        tmp_dir.cd do
+          "latexmk".run "-pdf", "-xelatex",
+                        "-latexoption=-shell-escape",
+                        tmp_dir.join("main.tex"),
+                        interactive: true
+        end
+      },
+      -> () {
+        FileUtils.cp(tmp_dir.join("main.pdf"), $config[:output_file])
+        "Created output report at #{$config[:output_file].as_tok}".psuc
+        true
+      }
+    ].do_all
+    tmp_dir.rmtree if $config[:cleanup]
+    status
   }
 ].do_all auto_exit_code: true
