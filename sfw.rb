@@ -248,7 +248,8 @@ module Shortcuts
   def run(*args,
           dir: nil, msg: nil, verbose: true, simulate: false,
           detached: false, single: false, ignore_status: false, output: $stdout,
-          interactive: false, retry_on_error: false)
+          interactive: false, retry_on_error: false,
+          success_msg: nil, failure_msg: nil)
     simulate ||= $simulate
 
     program_name = self.to_s
@@ -285,7 +286,7 @@ module Shortcuts
     status = false
     program_to_check = single.is_a?(String) ? single : program_name
     if single && program_to_check.is_running
-      "command `#{pretty_cmd.as_tok}` is already running".pinf
+      "Command `#{pretty_cmd.as_tok}` is already running".pinf
       status = true
     else
       _run = lambda do |run_cmd|
@@ -296,7 +297,7 @@ module Shortcuts
                      pid = Process.spawn(run_cmd)
                      if detached
                        if output != $stdout
-                         "cannot redirect output in interactive program".perr
+                         "Cannot redirect output in interactive program".perr
                        end
                        Process.detach(pid)
                        true
@@ -326,7 +327,7 @@ module Shortcuts
         FileUtils.cd(dir) do
           msg.pinf if msg
           if simulate
-            status = "run command `#{pretty_cmd.as_tok}` (workdir: `#{dir.as_tok}`)".simulated.pinf
+            status = "Run command #{pretty_cmd.as_tok} (workdir=#{dir.as_tok})".simulated.pinf
           else
             _run.call(cmd)
           end
@@ -334,7 +335,7 @@ module Shortcuts
       else
         msg.pinf if msg
         if simulate
-          status = "run command `#{pretty_cmd.as_tok}`".simulated.pinf
+          status = "Run command #{pretty_cmd.as_tok}".simulated.pinf
         else
           _run.call(cmd)
         end
@@ -342,11 +343,11 @@ module Shortcuts
 
       if !simulate
         if ignore_status || status
-          "command `#{pretty_cmd.as_tok}` successfully run".psuc if verbose
+          "Command #{pretty_cmd.as_tok} successfully run".psuc if verbose
         else
-          "command `#{pretty_cmd.as_tok}` failed to run".perr if verbose
+          "Command #{pretty_cmd.as_tok} failed to run".perr if verbose
           if retry_on_error
-            if "retry".ask type: :bool
+            if "Retry".ask type: :bool
               status = run(*args, dir: dir, msg: msg, verbose: verbose,
                            simulate: simulate, detached: detached,
                            single: single, ignore_status: ignore_status,
@@ -360,14 +361,22 @@ module Shortcuts
       end
     end
 
-    ignore_status || status
+    status = ignore_status || status
+
+    if status
+      success_msg.to_s.psuc if success_msg
+    else
+      failure_msg.to_s.pwrn if failure_msg
+    end
+
+    status
   end
 
   def chperms(perms, simulate: false)
     simulate ||= $simulate
 
     if simulate
-      "change permissions to: `#{perms}`".simulated.pinf
+      "Change permissions to: #{perms.as_tok}".simulated.pinf
     else
       FileUtils.chmod(perms.to_s.to_i(8), self.to_s)
     end
@@ -408,7 +417,7 @@ module Shortcuts
       begin
         hash.merge!(JSON.parse(config_path.read)) if config_path.readable?
       rescue JSON::ParserError => _
-        "skipping invalid config at `#{config.as_tok}`".pwrn
+        "Skipping invalid config at #{config.as_tok}".pwrn
       end
     end)
 
@@ -417,9 +426,11 @@ module Shortcuts
       begin
         config.merge!(JSON.parse(ENV[env_var_name]))
       rescue JSON::ParserError => _
-        "skipping invalid config in the environment variable `#{env_var_name.as_tok}`".pwrn
+        "Skipping invalid config in the environment variable #{env_var_name.as_tok}".pwrn
       end
     end
+
+    "Successfully parsed chip configuration".psuc
 
     config.deep_symbolize_keys
   end
@@ -442,11 +453,11 @@ module Shortcuts
       data = YAML.load_file(script_path).deep_symbolize_keys
       if data.has_key? :download
         data[:download].each do |name, url|
-          "downloading script `#{name.as_tok}` from `#{url.as_tok}`".pinf
+          "Downloading script #{name.as_tok} from #{url.as_tok}".pinf
           begin
             data = download(url)
           rescue ArgumentError => err # TODO add right errors
-            return "failed to download `#{url.as_tok}`: #{err.message.as_tok}".perr
+            return "Failed to download #{url.as_tok}: #{err.message.as_tok}".perr
           end
           if dst_path.directory?
             dst_dir_path = dst_path
@@ -454,39 +465,39 @@ module Shortcuts
             if dst_path.dirname.directory?
               dst_dir_path = dst_path.dirname
             else
-              "invalid destination path `#{to.as_tok}`".perr
+              "Invalid destination path #{to.as_tok}".perr
             end
           end
 
-          "script successfully downloaded".psuc
+          "Script successfully downloaded".psuc
 
           dst_script_path = dst_dir_path.join(name.to_s)
           if simulate
-            "wrote to `#{dst_script_path.as_tok}` (perms: #{perms.as_tok})".simulated.pinf
+            "Wrote to #{dst_script_path.as_tok} (permissions=#{perms.as_tok})".simulated.pinf
           else
             dst_script_path.delete if dst_script_path.file?
             IO.copy_stream(data, dst_script_path)
             dst_path.chperms perms
           end
 
-          "script successfully installed".psuc
+          "Script successfully installed".psuc
         end
       end
     else
       if script_path.filename.end_with?("-wrapper")
         program_name = script_path.filename.gsub(/-wrapper$/, "")
         unless program_name.check_program
-          if "missing program `#{program_name}`".pwrn ask_continue: true
-            "skipping installation of #{program_name.as_tok}".pinf
+          if "Missing program #{program_name.as_tok}".pwrn ask_continue: true
+            "Skipping installation of #{program_name.as_tok}".pinf
             return
           else
-            "fix your installation!".perr
+            "Fix your installation!".perr
           end
         end
-        "building wrapper for `#{program_name.as_tok}`".pinf
+        "Building wrapper for #{program_name.as_tok}".pinf
         dst_path = dst_path.dirname.join(program_name)
       else
-        "building script `#{script_path.as_tok}`".pinf
+        "Building script #{script_path.as_tok}".pinf
       end
 
       script_data = script_path.read
@@ -499,12 +510,12 @@ module Shortcuts
         dst_data = script_data
       end
 
-      "script successfully built".psuc
+      "Script successfully built".psuc
 
       perms = "555"
       if simulate
         if dst_path
-          "wrote to `#{dst_path.as_tok}` (perms: #{perms.as_tok})".simulated.pinf
+          "Wrote to #{dst_path.as_tok} (permissions=#{perms.as_tok})".simulated.pinf
         end
       else
         dst_path.delete if dst_path.file?
@@ -512,7 +523,7 @@ module Shortcuts
         dst_path.chperms perms
       end
 
-      "script successfully installed".psuc
+      "Script successfully installed".psuc
     end
 
     return dst_data
@@ -536,18 +547,18 @@ DOWNLOAD_ERRORS = [
 
 def download(url, max_size: nil)
   if $simulate
-    "downloaded url #{url}".pinf
+    "Downloaded url #{url}".pinf
     ""
   else
     url = URI.encode(URI.decode(url))
     url = URI(url)
-    raise Error, "url was invalid" if !url.respond_to?(:open)
+    raise Error, "URL was invalid" if !url.respond_to?(:open)
 
     options = {}
     options["User-Agent"] = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"
     options[:content_length_proc] = ->(size) {
       if max_size && size && size > max_size
-        raise Error, "file is too big (max is #{max_size})"
+        raise Error, "File is too big (maximum=#{max_size.as_tok})"
       end
     }
 
@@ -561,7 +572,7 @@ def download(url, max_size: nil)
   end
 rescue *DOWNLOAD_ERRORS => error
   raise if error.instance_of?(RuntimeError) && error.message !~ /redirection/
-  raise Error, "download failed (#{url}): #{error.message}"
+  raise Error, "Download failed (#{url.as_tok}): #{error.message}"
 end
 
 # include the defined shortcuts
@@ -583,7 +594,7 @@ class Array
       begin
         status = blk.call
       rescue Interrupt
-        status = "interrupted while running command".pwrn ask_continue: true
+        status = "Interrupted while running command".pwrn ask_continue: true
       end
     end
 
@@ -594,25 +605,32 @@ end
 
 class Hash
 
-  # extract `n` sample key/value pairs from the underlying `Hash`
+  # Extract `n` sample key/value pairs from the underlying `Hash`
   def sample(n=1)
     Hash[self.to_a.sample(n)]
   end
 
-  # perform recursive merge of the current `Hash` (`self`) with the provided one
+  # Perform recursive merge of the current `Hash` (`self`) with the provided one
   # (the `second` argument)
   #
   # the merge have knows how to recurse in both `Hash`es and `Array`s
-  def deep_merge(second)
+  def deep_merge(second, **options)
+    array_concat = options.key?(:array_concat) ? options[:array_concat] : false
+
     merger = proc do |key, v1, v2|
       if Hash === v1 && Hash === v2
         v1.merge(v2, &merger)
       elsif Array === v1 && Array === v2
-        (Set.new(v1) + Set.new(v2)).to_a
+        if array_concat
+          (Set.new(v1) + Set.new(v2)).to_a
+        else
+          v2
+        end
       else
         v2
       end
     end
+
     self.merge(second, &merger)
   end
 
@@ -694,10 +712,10 @@ class Pathname
   end
 end
 
-# ensure the current process is running as `root`
+# Ensure the current process is running as `root`
 def ensure_root
   if !(Process.euid == 0)
-    "the script needs root privileges".perr exit_code: 255
+    "The script needs root privileges".perr exit_code: 255
   else
     true
   end
@@ -713,15 +731,15 @@ def parse_args(mandatory: %i(), simulate_enabled: true)
 
   parser = OptionParser.new do |p|
     if simulate_enabled
-      p.on("-s", "--[no-]simulate", "run in simulate mode") do |simulate|
+      p.on("-s", "--[no-]simulate", "Run in simulate mode") do |simulate|
         $simulate = options[:simulate] = simulate
-        "running in `simulate` mode".pinf if $simulate
+        "Running in `simulate` mode".pinf if $simulate
       end
     end
 
     yield(p, options) if block_given?
 
-    p.on_tail("-h", "--help", "show this message") do
+    p.on_tail("-h", "--help", "Show this message") do
       puts p
       exit
     end
@@ -750,40 +768,7 @@ def parse_args(mandatory: %i(), simulate_enabled: true)
   options
 end
 
-# {{{ specific programs support
-
-def lpass_logged_in?
-  "lpass".run("status", verbose: false, output: nil)
-end
-
-def lpass_sync
-  "lpass".run "sync", interactive: true
-end
-
-def lpass_login(user)
-  "lpass".run "login", user, interactive: true
-end
-
-def lpass_show_pwd(id, **run_args)
-  "lpass".capture "show", "--pass", "H-#{id.to_s}-H", **run_args
-end
-
-def openterm(cmd, run_if: true, title: nil, tmux: true, detached: false)
-  args  = []
-  args += ["--title", title]
-  args += [tmux ? "--tmux" : "--no-tmux"]
-  unless cmd.nil? || cmd.empty?
-    args << "--cmd"
-    args << Array(cmd).map { |e| e.escape }.join(" ")
-  end
-
-  if run_if
-    "openterm".run(*args, interactive: true, detached: detached)
-  else
-    true
-  end
-
-end
+# {{{ Environment
 
 def with_env(**kwargs)
   "No block given".perr exit_code: 1 unless block_given?
@@ -814,6 +799,9 @@ def format_args(args, pretty: false)
          reject(&:empty?).
          join(" ")
   else
+    # Allow lazy evaluation of arguments
+    args = args.call if args.respond_to? :call
+
     if pretty
       args.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
     else
@@ -881,3 +869,218 @@ def render_dir(template_dir, output_dir,
 
   true
 end
+
+# ──────────────────────────────────────────────────────────────── FileSystem ──
+
+def xdg_runtime_dir(*args)
+  ENV["XDG_RUNTIME_DIR"].to_pn.expand_path.join(*args.map(&:to_s))
+end
+
+# ───────────────────────────────────────────────────────────────── Chip Flow ──
+
+class Proc
+  # Execute the underlying object and the other only if the first returns `true`
+  # Return `true` if both return `true`
+  def &(other)
+    lambda {
+      _update_exit_code
+      status = _safe_call
+
+      _update_exit_code
+      status && other._safe_call(status)
+    }
+  end
+
+  # Execute sequentially both and return `true` if any returns `true`
+  def |(other)
+    lambda {
+      _update_exit_code
+      status_self = _safe_call
+
+      _update_exit_code
+      status_other = other._safe_call(status_self)
+
+      status_self || status_other
+    }
+  end
+
+  def _update_exit_code
+    $exit_code = $exit_code.nil? ? 1 : $exit_code + 1 if $auto_exit_code
+  end
+
+  def _safe_call(*args)
+    begin
+      Proc.new do |*args|
+        diff = arity - args.size
+        diff = 0 if diff.negative?
+        args = args.concat(Array.new(diff, nil)).take(arity)
+
+        call(*args)
+      end.call(*args)
+    rescue Interrupt
+      "Interrupted while running flow entry".pwrn ask_continue: true
+    end
+  end
+end
+
+# Define the chip flow
+def define_flow(name: File.basename(__FILE__, File.extname(__FILE__)),
+                auto_exit_code: true,
+                # Boilerplate
+                main: false,
+                config: false,
+                args: nil)
+  # Define internal utility methods
+  $auto_exit_code = true
+
+  # Evaluate flow defined in the provided block
+  if block_given?
+    fn = -> () {
+      if main
+        "Starting #{name.as_tok}..".pinf
+      else
+        true
+      end
+    }
+
+    # Fill boilerplate
+    # -> Init config
+    fn = fn & -> () {
+      if config
+        $config = name.get_config
+      else
+        $config = {}
+      end
+
+      true
+    }
+    # -> Parse args
+    fn = fn & -> () {
+      if args
+        if args.respond_to? :call
+          $args = parse_args { |p, o| args.call(p, o) }
+          true
+        else
+          "Invalid arguments specification".perr
+        end
+      else
+        $args = parse_args
+        true
+      end
+    }
+
+    # Execute the given block
+    fn = fn & yield
+
+    # Show results
+    fn = fn | -> (status) {
+      if main
+        if status
+          "Successfully #{name.as_tok}".psuc
+        else
+          "Failed to execute #{name.as_tok}".perr
+        end
+      else
+        true
+      end
+    }
+
+    status = fn.call
+  else
+    status = "Invalid flow specification: no block given".perr
+  end
+
+  # Cleanup internal utility methods
+  $auto_exit_code = nil
+
+  # Return status
+  status
+end
+
+# ───────────────────────────────────────────────── Specific Programs Support ──
+
+def lpass_login(user)
+  "lpass".run "login", user, interactive: true
+end
+
+def lpass_sync
+  "lpass".run "sync", interactive: true
+end
+
+def lpass_show_pwd(id, **run_args)
+  "lpass".capture "show", "--pass", "H-#{id.to_s}-H", **run_args
+end
+
+def lpass_logged_in?
+  "lpass".run("status", verbose: false, output: nil)
+end
+
+def lpass_login_and_sync
+  if $config[:lastpass]
+    unless lpass_logged_in?
+      define_flow main: false do
+        -> { lpass_login $config[:lastpass][:user] } & -> { lpass_sync }
+      end
+    else
+      "Lastpass login skipped: already logged in".psuc
+    end
+  else
+    true
+  end
+end
+
+def openterm(cmd, run_if: true, title: nil, tmux: true, detached: false)
+  args  = []
+  args += ["--title", title]
+  args += [tmux ? "--tmux" : "--no-tmux"]
+  unless cmd.nil? || cmd.empty?
+    args << "--cmd"
+    args << Array(cmd).map { |e| e.escape }.join(" ")
+  end
+
+  if run_if
+    "openterm".run(*args, interactive: true, detached: detached)
+  else
+    true
+  end
+end
+
+def ssh_add(ssh_key)
+  ssh_key = ssh_key.to_s.to_pn.expand_path
+  if ssh_key.file?
+    already_present = "ssh-add".capture("-l").split("\n").any? do |e|
+      e.split(/\s+/)[2] == ssh_key.to_s
+    end
+
+    if already_present
+      "SSH key #{ssh_key.as_tok} is already present: skipping".pinf
+    else
+      "Adding SSH key #{ssh_key.as_tok}".pinf
+      "ssh-add".run "#{ssh_key}",
+                    interactive: true,
+                    success_msg: "SSH key successfully added",
+                    failure_msg: "Failed to add SSH key: skipping"
+    end
+  else
+    true
+  end
+end
+
+def gnome_keyring_unlock(pwd)
+  unless pwd
+    "Missing password for Gnome Keyring".perr
+  else
+    pwd.as_pwd!
+
+    ENV["GNOME_KEYRING_PASSWORD"] = $config[:gnome_keyring][:pwd]
+    status = "gnome-keyring-unlock".run interactive: true,
+                                        success_msg: "Successfully unlocked gnome keyring",
+                                        failure_msg: "Failed to unlock gnome keyring"
+    ENV["GNOME_KEYRING_PASSWORD"] = nil
+
+    status
+  end
+  true
+end
+
+# ──────────────────────────────────────────────────────────────────────────────

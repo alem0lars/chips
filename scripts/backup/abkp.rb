@@ -81,7 +81,7 @@ config = "abkp".get_config
           repo = "#{config[:remote][:username]}@#{config[:remote][:host]}:#{backup[:repo]}"
           archive = "#{repo}::#{backup[:archive_name]}"
 
-          keep = backup[:keep].deep_merge(config[:keep])
+          keep = backup[:keep].deep_merge(config[:keep], array_concat: true)
 
           "attic".run "create",
             "--stats",
