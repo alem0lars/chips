@@ -25,7 +25,7 @@ define_flow main: true, config: true do
                        "--two-way", "--save-images", "--all",
                        "--path", -> { $config[:gnsync][:path].escape } }\
   |
-  -> { lpass_login_and_sync }\
+  -> { lpass_login_and_sync($config[:lastpass][:user]) if $config[:lastpass] }\
   |
   (
     -> { "ssh-agent".run "-a", xdg_runtime_dir("ssh-agent.socket"),

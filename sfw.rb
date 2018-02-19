@@ -1015,17 +1015,13 @@ def lpass_logged_in?
   "lpass".run("status", verbose: false, output: nil)
 end
 
-def lpass_login_and_sync
-  if $config[:lastpass]
-    unless lpass_logged_in?
-      define_flow main: false do
-        -> { lpass_login $config[:lastpass][:user] } & -> { lpass_sync }
-      end
-    else
-      "Lastpass login skipped: already logged in".psuc
+def lpass_login_and_sync(user)
+  unless lpass_logged_in?
+    define_flow main: false do
+      -> { lpass_login user } & -> { lpass_sync }
     end
   else
-    true
+    "Lastpass login skipped: already logged in".psuc
   end
 end
 
