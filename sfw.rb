@@ -34,28 +34,28 @@ module Shortcuts
 
   # {{{ color
 
-  def black;         "\e[30m#{self.to_s}\e[0m" end
-  def red;           "\e[31m#{self.to_s}\e[0m" end
-  def green;         "\e[32m#{self.to_s}\e[0m" end
-  def yellow;        "\e[33m#{self.to_s}\e[0m" end
-  def blue;          "\e[34m#{self.to_s}\e[0m" end
-  def magenta;       "\e[35m#{self.to_s}\e[0m" end
-  def cyan;          "\e[36m#{self.to_s}\e[0m" end
-  def gray;          "\e[37m#{self.to_s}\e[0m" end
+  def black; "\e[30m#{self.to_s}\e[0m" end
+  def red; "\e[31m#{self.to_s}\e[0m" end
+  def green; "\e[32m#{self.to_s}\e[0m" end
+  def yellow; "\e[33m#{self.to_s}\e[0m" end
+  def blue; "\e[34m#{self.to_s}\e[0m" end
+  def magenta; "\e[35m#{self.to_s}\e[0m" end
+  def cyan; "\e[36m#{self.to_s}\e[0m" end
+  def gray; "\e[37m#{self.to_s}\e[0m" end
 
-  def bg_black;      "\e[40m#{self.to_s}\e[0m" end
-  def bg_red;        "\e[41m#{self.to_s}\e[0m" end
-  def bg_green;      "\e[42m#{self.to_s}\e[0m" end
-  def bg_yellow;     "\e[43m#{self.to_s}\e[0m" end
-  def bg_blue;       "\e[44m#{self.to_s}\e[0m" end
-  def bg_magenta;    "\e[45m#{self.to_s}\e[0m" end
-  def bg_cyan;       "\e[46m#{self.to_s}\e[0m" end
-  def bg_gray;       "\e[47m#{self.to_s}\e[0m" end
+  def bg_black; "\e[40m#{self.to_s}\e[0m" end
+  def bg_red; "\e[41m#{self.to_s}\e[0m" end
+  def bg_green; "\e[42m#{self.to_s}\e[0m" end
+  def bg_yellow; "\e[43m#{self.to_s}\e[0m" end
+  def bg_blue; "\e[44m#{self.to_s}\e[0m" end
+  def bg_magenta; "\e[45m#{self.to_s}\e[0m" end
+  def bg_cyan; "\e[46m#{self.to_s}\e[0m" end
+  def bg_gray; "\e[47m#{self.to_s}\e[0m" end
 
-  def bold;          "\e[1m#{self.to_s}\e[22m" end
-  def italic;        "\e[3m#{self.to_s}\e[23m" end
-  def underline;     "\e[4m#{self.to_s}\e[24m" end
-  def blink;         "\e[5m#{self.to_s}\e[25m" end
+  def bold; "\e[1m#{self.to_s}\e[22m" end
+  def italic; "\e[3m#{self.to_s}\e[23m" end
+  def underline; "\e[4m#{self.to_s}\e[24m" end
+  def blink; "\e[5m#{self.to_s}\e[25m" end
   def reverse_color; "\e[7m#{self.to_s}\e[27m" end
 
   # }}}
@@ -153,13 +153,13 @@ module Shortcuts
   # {{{ parsing
 
   def as_pwd!(**run_args)
-    replace self.as_pwd(**run_args)
+    replace(as_pwd(**run_args))
   end
 
   def as_pwd(**run_args)
-    case self.to_s
+    case to_s
     when /^lpass:(?<id>.+)$/ then lpass_show_pwd(Regexp.last_match(:id), **run_args)
-    else self
+    else                          self
     end.dup
   end
 
@@ -212,7 +212,7 @@ module Shortcuts
       args << [
         format_args(cmd),
         "echo Hit Ctrl+D to exit",
-        "read"
+        "read",
       ].join("; ")
     else
       args += cmd
@@ -263,14 +263,14 @@ module Shortcuts
       pretty_cmd << format_args(args, pretty: true)
     end
 
-    handle_output = ->(output_data) do
+    handle_output = -> (output_data) do
       data = output_data.strip
       lines = data.split("\n")
 
       tmp_output, fn = if output.respond_to? :call
                          [StringIO.new, output]
                        else
-                         [output, ->(_, _) { true }]
+                         [output, -> (_, _) { true }]
                        end
 
       return false unless $?.success?
@@ -349,10 +349,10 @@ module Shortcuts
           if retry_on_error
             if "Retry".ask type: :bool
               status = run(*args, dir: dir, msg: msg, verbose: verbose,
-                           simulate: simulate, detached: detached,
-                           single: single, ignore_status: ignore_status,
-                           output: output, interactive: interactive,
-                           retry_on_error: retry_on_error)
+                                  simulate: simulate, detached: detached,
+                                  single: single, ignore_status: ignore_status,
+                                  output: output, interactive: interactive,
+                                  retry_on_error: retry_on_error)
             else
               status = false
             end
@@ -408,7 +408,7 @@ module Shortcuts
     avail_config_paths = [
       "/etc".to_pn.join(name),
       ENV["HOME"].to_pn.join(".config", name),
-      ENV["HOME"].to_pn.join(".#{name}")
+      ENV["HOME"].to_pn.join(".#{name}"),
     ]
 
     config = default
@@ -502,10 +502,10 @@ module Shortcuts
 
       script_data = script_path.read
       if script_path.extname == ".rb"
-        hashbang    = "#!/usr/bin/env ruby"
-        separator   = "# entry-point"
-        sfw_data    = __FILE__.to_pn.read
-        dst_data    = "#{hashbang}\n\n#{sfw_data}\n\n#{separator}\n#{script_data}"
+        hashbang = "#!/usr/bin/env ruby"
+        separator = "# entry-point"
+        sfw_data = __FILE__.to_pn.read
+        dst_data = "#{hashbang}\n\n#{sfw_data}\n\n#{separator}\n#{script_data}"
       else
         dst_data = script_data
       end
@@ -556,7 +556,7 @@ def download(url, max_size: nil)
 
     options = {}
     options["User-Agent"] = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"
-    options[:content_length_proc] = ->(size) {
+    options[:content_length_proc] = -> (size) {
       if max_size && size && size > max_size
         raise Error, "File is too big (maximum=#{max_size.as_tok})"
       end
@@ -576,15 +576,14 @@ rescue *DOWNLOAD_ERRORS => error
 end
 
 # include the defined shortcuts
-class Fixnum;   include Shortcuts end
-class String;   include Shortcuts end
-class Symbol;   include Shortcuts end
+class Fixnum; include Shortcuts end
+class String; include Shortcuts end
+class Symbol; include Shortcuts end
 class Pathname; include Shortcuts end
-class Array;    include Shortcuts end
-class Hash;     include Shortcuts end
+class Array; include Shortcuts end
+class Hash; include Shortcuts end
 
 class Array
-
   def do_all(auto_exit_code: false)
     status = true
 
@@ -600,13 +599,12 @@ class Array
 
     status
   end
-
 end
 
 class Hash
 
   # Extract `n` sample key/value pairs from the underlying `Hash`
-  def sample(n=1)
+  def sample(n = 1)
     Hash[self.to_a.sample(n)]
   end
 
@@ -634,7 +632,7 @@ class Hash
     self.merge(second, &merger)
   end
 
-  def fqkeys(prefix="")
+  def fqkeys(prefix = "")
     self.inject([]) do |acc, (k, v)|
       prefix_new = prefix.empty? ? k.to_s : "#{prefix}.#{k}"
       acc + (v.is_a?(Hash) ? v.fqkeys(prefix_new) : [prefix_new])
@@ -642,29 +640,29 @@ class Hash
   end
 
   def slice(*keys)
-    self.select{|k, _| keys.include?(k)}
+    self.select { |k, _| keys.include?(k) }
   end
 
   # return a new `Hash` with all keys converted to `String`s
   def deep_stringify_keys
-    deep_transform_keys{ |key| key.to_s }
+    deep_transform_keys { |key| key.to_s }
   end
 
   # destructively convert all keys to `String`s
   def deep_stringify_keys!
-    deep_transform_keys!{ |key| key.to_s }
+    deep_transform_keys! { |key| key.to_s }
   end
 
   # return a new `Hash` with all keys converted to `Symbol`s, as long as they
   # respond to `to_sym`
   def deep_symbolize_keys
-    deep_transform_keys{ |key| key.to_sym rescue key }
+    deep_transform_keys { |key| key.to_sym rescue key }
   end
 
   # destructively convert all keys to `Symbol`s, as long as they respond to
   # `to_sym`
   def deep_symbolize_keys!
-    deep_transform_keys!{ |key| key.to_sym rescue key }
+    deep_transform_keys! { |key| key.to_sym rescue key }
   end
 
   # return a new `Hash` with all keys converted by the block operation
@@ -684,10 +682,11 @@ class Hash
         result[yield(key)] = deep_transform_keys_in_object(value, &block)
       end
     when Array
-      object.map {|e| deep_transform_keys_in_object(e, &block)}
+      object.map { |e| deep_transform_keys_in_object(e, &block) }
     else object
     end
   end
+
   private :deep_transform_keys_in_object
 
   def deep_transform_keys_in_object!(object, &block)
@@ -699,10 +698,11 @@ class Hash
       end
       object
     when Array
-      object.map! {|e| deep_transform_keys_in_object!(e, &block)}
+      object.map! { |e| deep_transform_keys_in_object!(e, &block) }
     else object
     end
   end
+
   private :deep_transform_keys_in_object!
 end
 
@@ -796,8 +796,8 @@ end
 def format_args(args, pretty: false)
   if args.is_a? Array
     args.map { |arg| format_args(arg, pretty: pretty) }.
-         reject(&:empty?).
-         join(" ")
+      reject(&:empty?).
+      join(" ")
   else
     # Allow lazy evaluation of arguments
     args = args.call if args.respond_to? :call
@@ -1008,7 +1008,7 @@ def lpass_sync
 end
 
 def lpass_show_pwd(id, **run_args)
-  "lpass".capture "show", "--pass", "H-#{id.to_s}-H", **run_args
+  "lpass".capture("show", "--pass", "H-#{id.to_s}-H", **run_args)
 end
 
 def lpass_logged_in?
@@ -1026,7 +1026,7 @@ def lpass_login_and_sync(user)
 end
 
 def openterm(cmd, run_if: true, title: nil, tmux: true, detached: false)
-  args  = []
+  args = []
   args += ["--title", title]
   args += [tmux ? "--tmux" : "--no-tmux"]
   unless cmd.nil? || cmd.empty?
