@@ -908,7 +908,7 @@ class Proc
     $exit_code = $exit_code.nil? ? 1 : $exit_code + 1 if $auto_exit_code
   end
 
-  def _safe_call(*args)
+  def _safe_call(*arguments)
     begin
       Proc.new do |*args|
         diff = arity - args.size
@@ -916,7 +916,7 @@ class Proc
         args = args.concat(Array.new(diff, nil)).take(arity)
 
         call(*args)
-      end.call(*args)
+      end.call(*arguments)
     rescue Interrupt
       "Interrupted while running flow entry".pwrn ask_continue: true
     end
