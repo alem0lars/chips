@@ -208,7 +208,9 @@ end
           "-u", target,
           "-o", "json",
           output: -> (data, lines) {
+            "DONE DONE DONE TODO ALE ===========================".psuc
             config[:output_dir].join(report_name(:droopescan, target, :json)).write(data)
+            "DONE DONE DONE TODO ALE - AFTER WRITE ============".psuc
           },
           interactive: true,
           detached: true,
