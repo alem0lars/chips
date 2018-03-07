@@ -206,6 +206,7 @@ end
           "alem0lars/droopescan",
           "scan",
           "-u", target,
+          "-o", "json",
           interactive: true,
           detached: true,
           manual_exit: true
