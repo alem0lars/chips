@@ -576,7 +576,7 @@ rescue *DOWNLOAD_ERRORS => error
 end
 
 # include the defined shortcuts
-class Fixnum; include Shortcuts end
+class Integer; include Shortcuts end
 class String; include Shortcuts end
 class Symbol; include Shortcuts end
 class Pathname; include Shortcuts end

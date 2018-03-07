@@ -48,6 +48,7 @@ end
     $config[:supported_scanners] = %i[
       nikto
       wpscan
+      droopescan
       golismero
       metasploit
       arachni
@@ -145,6 +146,7 @@ end
           interactive: true,
           detached: true,
           manual_exit: true
+        "#{"nikto".as_tok} has been spawned for #{target.as_tok}".psuc
       end
 
       if scanners[:wapiti][:enabled]
@@ -161,6 +163,7 @@ end
           interactive: true,
           detached: true,
           manual_exit: true
+        "#{"wapiti".as_tok} has been spawned for #{target.as_tok}".psuc
       end
 
       if scanners[:wpscan][:enabled]
@@ -177,6 +180,7 @@ end
           interactive: true,
           detached: true,
           manual_exit: true
+        "#{"wpscan".as_tok} has been spawned for #{target.as_tok}".psuc
       end
 
       if scanners[:golismero][:enabled]
@@ -191,6 +195,21 @@ end
           interactive: true,
           detached: true,
           manual_exit: true
+        "#{"golismero".as_tok} has been spawned for #{target.as_tok}".psuc
+      end
+
+      if scanners[:droopescan][:enabled]
+        config = scanners[:droopescan]
+        session_name(:droopescan, target).tmux "docker", "run",
+          "-it",
+          "--rm",
+          "alem0lars/droopescan",
+          "scan",
+          "-u", target,
+          interactive: true,
+          detached: true,
+          manual_exit: true
+        "#{"droopescan".as_tok} has been spawned for #{target.as_tok}".psuc
       end
     end
 
@@ -216,6 +235,7 @@ end
         interactive: true,
         detached: true,
         manual_exit: true
+      "A generic #{"msfconsole".as_tok} has been spawned with RHOSTS=#{targets_for_service(:metasploit).keys.join(",").as_tok}".psuc
     end
 
     # TODO at the moment doesn't run the command, instead it should do!

@@ -55,7 +55,7 @@ define_flow main: true, config: true do
   (
     -> { gnome_keyring_unlock($config[:gnome_keyring][:pwd]) if $config[:gnome_keyring] }\
     &
-    -> { "skypeforlinux".run **sdi }
+    -> { "skypeforlinux".run(**sdi) }
   )\
   |
   -> { openterm %w(weechat), run_if: $config[:weechat], title: :weechat, detached: true }\
