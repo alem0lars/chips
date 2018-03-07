@@ -231,18 +231,30 @@ module Shortcuts
     end
   end
 
-  def arg_if(arg_value)
+  def arg_if(arg_value, matches: nil, also: nil, otherwise: [], warn: nil)
     arg_name = self.to_s
-    if arg_value
+    if (also.nil? || also) &&
+       ((matches.nil? && arg_value) ||
+        (matches && arg_value =~ Regexp.new(matches)))
       arg_name
     else
-      []
+      warn.pwrn if !warn.nil? and !arg_value.nil?
+      otherwise
     end
   end
 
-  def arg_valued(arg_value)
+  def arg_valued(arg_value,
+                 format: -> (v) { v },
+                 matches: nil, also: nil, otherwise: [], warn: nil)
     arg_name = self.to_s
-    arg_value ? [arg_name, arg_value] : []
+    if (also.nil? || also) &&
+       ((matches.nil? && arg_value) ||
+        (matches && arg_value =~ Regexp.new(matches)))
+      [arg_name, format.call(arg_value)]
+    else
+      warn.pwrn if !warn.nil? and !arg_value.nil?
+      otherwise
+    end
   end
 
   def run(*args,

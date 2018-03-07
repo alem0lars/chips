@@ -49,6 +49,7 @@ end
       nikto
       wpscan
       droopescan
+      sqlmap
       golismero
       metasploit
       arachni
@@ -203,19 +204,87 @@ end
         session_name(:droopescan, target).tmux "docker", "run",
           "-it",
           "--rm",
+          "--mount", "type=bind,source=#{config[:output_dir]},target=/boot",
           "alem0lars/droopescan",
           "scan",
           "-u", target,
           "-o", "json",
-          output: -> (data, lines) {
-            "DONE DONE DONE TODO ALE ===========================".psuc
-            config[:output_dir].join(report_name(:droopescan, target, :json)).write(data)
-            "DONE DONE DONE TODO ALE - AFTER WRITE ============".psuc
-          },
           interactive: true,
           detached: true,
           manual_exit: true
         "#{"droopescan".as_tok} has been spawned for #{target.as_tok}".psuc
+      end
+
+      if scanners[:sqlmap][:enabled]
+        config = scanners[:sqlmap]
+
+        session_name(:sqlmap, target).tmux "docker", "run",
+          "-it",
+          "--rm",
+          "--mount", "type=bind,source=#{config[:output_dir]},target=/boot",
+          "k0st/alpine-sqlmap",
+          # Targets
+          case target
+          when /^log:/i     then "-l".arg_valued(target)
+          when /^sitemap:/i then "-x".arg_valued(target)
+          when /^bulk:/i    then "-m".arg_valued(target)
+          else                   "-u".arg_valued(target)
+          end,
+          # Request
+          "--method".arg_valued(config[:method]),
+          "--data".arg_valued(
+            config[:data],
+            also: config[:method] =~ /get/i,
+            warn: "Parameter #{"data".as_tok} isn't compatible " +
+                  "with #{"method=get".as_tok}"),
+          "--param-del".arg_valued(config[:params_delimiter]),
+          "--random-agent".arg_if(
+            config[:user_agent],
+            also: config[:user_agent] == "random",
+            otherwise: "--user-agent".arg_valued(config[:user_agent])),
+          "--cookie".arg_valued(config[:cookie]),
+          "--load-cookies".arg_valued(config[:cookie_file]),
+          "--cookie-del".arg_valued(
+            config[:cookie_delimiter],
+            also: config[:cookie] || config[:cookie_file],
+            warn: "Parameter #{"cookie-del".as_tok} has been specified " +
+                  "but #{"cookie".as_tok} is missing"),
+          "--drop-set-cookie".arg_if(config[:drop_set_cookie]),
+          "--host".arg_valued(config[:host]),
+          "--referer".arg_valued(config[:referer]),
+          "--headers".arg_valued(config[:headers], format: -> (headers) {
+            headers.is_a?(Array) ? headers.join("\n") : headers
+          }),
+          # Injection
+          "-p".arg_valued(config[:params], format: -> (params) {
+            params.is_a?(Array) ? params.join(",") : params
+          }),
+          "--prefix".arg_valued(config[:prefix]),
+          "--suffix".arg_valued(config[:suffix]),
+          # Detection
+          "--level".arg_valued(config[:level]),
+          "--risk".arg_valued(config[:risk]),
+          # Fingerprint
+          "-f".arg_if(config[:fingerprint]),
+          # Enumeration
+          "-a",
+          # Brute-force
+          "--common-tables",
+          "--common-columns",
+          # User-defined function injection
+          # TODO
+          # File-system access
+          # TODO
+          # OS access
+          # TODO
+          # Windows registry access
+          # TODO
+          # Verbosity
+          "-v".arg_valued(config[:verbosity]),
+          interactive: true,
+          detached: true,
+          manual_exit: true
+        "#{"sqlmap".as_tok} has been spawned for #{target.as_tok}".psuc
       end
     end
 
