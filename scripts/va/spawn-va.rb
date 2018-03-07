@@ -207,6 +207,9 @@ end
           "scan",
           "-u", target,
           "-o", "json",
+          output: -> (data, lines) {
+            config[:output_dir].join(report_name(:droopescan, target, :json)).write(data)
+          },
           interactive: true,
           detached: true,
           manual_exit: true
