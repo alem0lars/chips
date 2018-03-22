@@ -40,6 +40,8 @@ define_flow main: true, config: true do
   |
   -> { "todoist".run_if $config[:todoist], **sdi }\
   |
+  -> { "notion".run_if $config[:notion], **sdi }\
+  |
   -> { "trello".run_if $config[:trello], **sdi }\
   |
   -> { "toggl".run_if $config[:toggl], **sdi }\
