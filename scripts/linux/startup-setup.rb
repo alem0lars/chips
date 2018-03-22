@@ -38,6 +38,8 @@ define_flow main: true, config: true do
   |
   -> { "copyq".run_if $config[:copyq], **sdi }\
   |
+  -> { "todoist".run_if $config[:todoist], **sdi }\
+  |
   -> { "trello".run_if $config[:trello], **sdi }\
   |
   -> { "toggl".run_if $config[:toggl], **sdi }\
