@@ -56,6 +56,10 @@ define_flow main: true, config: true do
   |
   -> { "telegram".run_if $config[:telegram], **sdi }\
   |
+  -> { "facebook".run_if $config[:facebook], **sdi }\
+  |
+  -> { "inoreader".run_if $config[:inoreader], **sdi }\
+  |
   (
     -> { gnome_keyring_unlock($config[:gnome_keyring][:pwd]) if $config[:gnome_keyring] }\
     &
