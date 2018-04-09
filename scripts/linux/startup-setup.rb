@@ -43,7 +43,7 @@ define_flow main: true, config: true do
   |
   -> { "mailspring".run_if $config[:mailspring], **sdi }\
   |
-  -> { "waveinbox".run_if $config[:waveinbox], **sdi }\
+  -> { "wavebox".run_if $config[:wavebox], **sdi }\
   |
   -> { "slack".run_if $config[:slack], **sdi }\
   |
