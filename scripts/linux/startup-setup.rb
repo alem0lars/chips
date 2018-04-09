@@ -27,13 +27,6 @@ define_flow main: true, config: true do
   |
   -> { lpass_login_and_sync($config[:lastpass][:user]) if $config[:lastpass] }\
   |
-  (
-    -> { "ssh-agent".run "-a", xdg_runtime_dir("ssh-agent.socket"),
-                         single: true, interactive: true }\
-    &
-    -> { ssh_add "~/.ssh/id_rsa" }
-  )\
-  |
   -> { "megasync".run_if $config[:mega], **sdi }\
   |
   -> { "copyq".run_if $config[:copyq], **sdi }\
@@ -47,6 +40,10 @@ define_flow main: true, config: true do
   -> { "toggl".run_if $config[:toggl], **sdi }\
   |
   -> { "thunderbird".run_if $config[:thunderbird], **sdi }\
+  |
+  -> { "mailspring".run_if $config[:mailspring], **sdi }\
+  |
+  -> { "waveinbox".run_if $config[:waveinbox], **sdi }\
   |
   -> { "slack".run_if $config[:slack], **sdi }\
   |
@@ -67,6 +64,13 @@ define_flow main: true, config: true do
   )\
   |
   -> { openterm %w(weechat), run_if: $config[:weechat], title: :weechat, detached: true }\
+  |
+  (
+    -> { "ssh-agent".run "-a", xdg_runtime_dir("ssh-agent.socket"),
+                         single: true, interactive: true }\
+    &
+    -> { ssh_add "~/.ssh/id_rsa" }
+  )\
   |
   -> {
     if $config[:ssh]
