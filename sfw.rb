@@ -71,7 +71,7 @@ module Shortcuts
   end
 
   def simulated
-    prefixed "[simulated]".bg_yellow.black
+    prefixed "[SIMULATED]".bg_yellow.black
   end
 
   def escape
@@ -97,17 +97,17 @@ module Shortcuts
       elsif answer =~ /(n|no|fuck|fuck\s+you|fuck\s+off)$/i
         false
       else
-        "answer misunderstood".pwrn
+        "Answer misunderstood".pwrn
         question.ask type: type
       end
     when :string
       if !allow_empty && answer.empty?
-        "empty answer".pwrn
+        "Empty answer".pwrn
         question.ask type: type
       else
         answer
       end
-    else "unhandled question type: `#{type}`".perr
+    else "Unhandled question type: `#{type}`".perr
     end
   end
 
@@ -229,6 +229,22 @@ module Shortcuts
     else
       true
     end
+  end
+
+  def run_app_if(condition, *args, **kwargs)
+    run_if(condition, *args, {
+      detached: true,
+      single: true,
+      interactive: true
+    }.deep_merge(kwargs))
+  end
+
+  def run_app(*args, **kwargs)
+    run_app_if(true, *args, **kwargs)
+  end
+
+  def pkill(sig)
+    "pkill".run "-#{sig.to_s.upcase}", self.to_s
   end
 
   def arg_if(arg_value, matches: nil, also: nil, otherwise: [], warn: nil)
@@ -357,7 +373,7 @@ module Shortcuts
         if ignore_status || status
           "Command #{pretty_cmd.as_tok} successfully run".psuc if verbose
         else
-          "Command #{pretty_cmd.as_tok} failed to run".perr if verbose
+          "Command #{pretty_cmd.as_tok} failed to run".perr exit_code: nil if verbose
           if retry_on_error
             if "Retry".ask type: :bool
               status = run(*args, dir: dir, msg: msg, verbose: verbose,
@@ -426,13 +442,34 @@ module Shortcuts
     config = default
 
     config.merge!(avail_config_paths.each_with_object({}) do |config_path, hash|
-      begin
-        hash.merge!(JSON.parse(config_path.read)) if config_path.readable?
-      rescue JSON::ParserError => _
-        "Skipping invalid config at #{config.as_tok}".pwrn
+      # Parse YAML config files
+      %w(yaml yml).each do |yaml_ext|
+        yaml_config_path = "#{config_path}.#{yaml_ext}".to_pn
+        if yaml_config_path.readable?
+          content = yaml_config_path.read
+          begin
+            hash.merge!(YAML.load(content))
+          rescue
+            "Skipping invalid config at #{yaml_config_path.as_tok}".pwrn
+          end
+        end
+      end
+
+      # Parse JSON config files
+      %w(json).each do |json_ext|
+        json_config_path = "#{config_path}.#{json_ext}".to_pn
+        if json_config_path.readable?
+          content = json_config_path.read
+          begin
+            hash.merge!(JSON.parse(content))
+          rescue
+            "Skipping invalid config at #{json_config_path.as_tok}".pwrn
+          end
+        end
       end
     end)
 
+    # Parse configuration stored in environment variables (JSON format)
     env_var_name = "CFG_#{name.upcase}"
     if ENV.has_key?(env_var_name)
       begin
@@ -458,7 +495,7 @@ module Shortcuts
     dst_path = to.to_s.to_pn unless to.nil?
     perms = "555"
 
-    return "invalid script: not a valid file".perr unless script_path.file?
+    return "Invalid script: not a regular file".perr unless script_path.file?
 
     if %w(.yml .yaml).include? script_path.extname
       # TODO make checks about correctness of information provided
@@ -469,7 +506,7 @@ module Shortcuts
           begin
             data = download(url)
           rescue ArgumentError => err # TODO add right errors
-            return "Failed to download #{url.as_tok}: #{err.message.as_tok}".perr
+            return "Failed to download #{url.as_tok}: #{err.message.as_tok}".perr exit_code: nil
           end
           if dst_path.directory?
             dst_dir_path = dst_path
@@ -477,7 +514,7 @@ module Shortcuts
             if dst_path.dirname.directory?
               dst_dir_path = dst_path.dirname
             else
-              "Invalid destination path #{to.as_tok}".perr
+              "Invalid destination path #{to.as_tok}".perr exit_code: nil
             end
           end
 
@@ -623,7 +660,7 @@ class Hash
   # Perform recursive merge of the current `Hash` (`self`) with the provided one
   # (the `second` argument)
   #
-  # the merge have knows how to recurse in both `Hash`es and `Array`s
+  # Merge knows how to recurse in both `Hash`es and `Array`s
   def deep_merge(second, **options)
     array_concat = options.key?(:array_concat) ? options[:array_concat] : false
 
@@ -890,6 +927,12 @@ end
 
 # ───────────────────────────────────────────────────────────────── Chip Flow ──
 
+class Array
+  def to_flow(kind)
+    inject(pop, kind)
+  end
+end
+
 class Proc
   # Execute the underlying object and the other only if the first returns `true`
   # Return `true` if both return `true`
@@ -903,7 +946,8 @@ class Proc
     }
   end
 
-  # Execute sequentially both and return `true` if any returns `true`
+  # Execute sequentially both (regardless on return value) and return `true`
+  # if any returns `true`
   def |(other)
     lambda {
       _update_exit_code
@@ -1007,6 +1051,22 @@ def define_flow(name: File.basename(__FILE__, File.extname(__FILE__)),
 
   # Return status
   status
+end
+
+# ─────────────────────────────────────────────────────────────────────── Run ──
+
+def run_app(name, config: :default)
+  config = $config[name.to_s.to_sym] if config == :default
+
+  if config.is_a? Hash
+    enabled = config.key?(:enabled) ? config.delete(:enabled) : true
+    args = Array(config.delete(:args) || [])
+    name.run_app_if(enabled, *args, **config)
+  elsif config == true
+    name.run_app
+  else
+    "Invalid app config: #{config}".perr exit_code: nil
+  end
 end
 
 # ───────────────────────────────────────────────── Specific Programs Support ──

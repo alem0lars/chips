@@ -1,108 +1,25 @@
 define_flow main: true, config: true do
-  sdi = { detached: true, single: true, interactive: true }
+  # TODO validate config
 
-  -> { "start-pulseaudio-x11".run single: "pulseaudio", interactive: true }\
-  |
-  -> { "redshift".run_if $config[:redshift], **sdi }\
-  |
-  -> { "unclutter".run "-root", **sdi }\
-  |
-  -> { "multimonitor".run_if $config[:multimonitor], **sdi }\
-  |
-  -> { "dunst".run_if $config[:dunst], **sdi }\
-  |
-  -> { "taffybar".run_if $config[:taffybar], **sdi }\
-  |
-  -> { "wmname".run_if $config[:wmname], $config[:wmname], **sdi }\
-  |
-  -> { "nitrogen".run_if $config[:nitrogen], "--restore", interactive: true }\
-  |
-  -> { "feh".run_if $config[:feh], "--no-fehbg", "--image-bg", "black",
-                    "--bg-max", -> { $config[:feh][:path].escape },
-                    interactive: true }\
-  |
-  -> { "gnsync".run_if $config[:gnsync],
-                       "--two-way", "--save-images", "--all",
-                       "--path", -> { $config[:gnsync][:path].escape } }\
-  |
-  -> { lpass_login_and_sync($config[:lastpass][:user]) if $config[:lastpass] }\
-  |
-  -> { "megasync".run_if $config[:mega], **sdi }\
-  |
-  -> { "copyq".run_if $config[:copyq], **sdi }\
-  |
-  -> { "todoist".run_if $config[:todoist], **sdi }\
-  |
-  -> { "notion".run_if $config[:notion], **sdi }\
-  |
-  -> { "trello".run_if $config[:trello], **sdi }\
-  |
-  -> { "toggl".run_if $config[:toggl], **sdi }\
-  |
-  -> { "thunderbird".run_if $config[:thunderbird], **sdi }\
-  |
-  -> { "mailspring".run_if $config[:mailspring], **sdi }\
-  |
-  -> { "wavebox".run_if $config[:wavebox], **sdi }\
-  |
-  -> { "slack".run_if $config[:slack], **sdi }\
-  |
-  -> { "whatsapp".run_if $config[:whatsapp], **sdi }\
-  |
-  -> { "caprine".run_if $config[:caprine], **sdi }\
-  |
-  -> { "telegram".run_if $config[:telegram], **sdi }\
-  |
-  -> { "facebook".run_if $config[:facebook], **sdi }\
-  |
-  -> { "inoreader".run_if $config[:inoreader], **sdi }\
-  |
+  # 1: Login to Lastpass
+  -> {
+    lpass_login_and_sync($config[:lastpass][:user]) if $config[:lastpass]
+  } |
+  # 2: Setup SSH agent
   (
-    -> { gnome_keyring_unlock($config[:gnome_keyring][:pwd]) if $config[:gnome_keyring] }\
-    &
-    -> { "skypeforlinux".run(**sdi) }
-  )\
-  |
-  -> { openterm %w(weechat), run_if: $config[:weechat], title: :weechat, detached: true }\
-  |
-  (
-    -> { "ssh-agent".run "-a", xdg_runtime_dir("ssh-agent.socket"),
-                         single: true, interactive: true }\
-    &
+    -> {
+      run_app("ssh-agent", config: {
+        args: ["-a", xdg_runtime_dir("ssh-agent.socket")]
+      })
+    } &
     -> { ssh_add "~/.ssh/id_rsa" }
-  )\
-  |
+  ) |
+  # 3: Spawn apps
   -> {
-    if $config[:ssh]
-      $config[:ssh].each do |ssh|
-        ssh[:pwd].as_pwd!
-        ssh[:title] ||= "#{ssh[:user]}@#{ssh[:server]}"
-
-        cmd = []
-        cmd += ["sshpass", "-p", "H-#{ssh[:pwd]}-H"] if ssh[:pwd]
-        cmd += ["ssh", "#{ssh[:user]}@#{ssh[:server]}"]
-
-        openterm cmd, title: ssh[:title], detached: true
-      end
-    else
-      true
-    end
-  }\
-  |
-  -> {
-    return true unless $config[:web_apps]
-    args = []
-    if $config[:web_apps][:only]
-      args << "--only"
-      args << $config[:web_apps][:only].join(",")
-    end
-    "spawn-web-apps".run(*args, detached: true, single: true, interactive: true)
-  }\
-  |
-  -> {
-    if $config[:tmuxinator]
-      "tmuxinator".run "stop", "sysmon", ignore_status: true, interactive: true
-      openterm %w(tmuxinator start sysmon), title: :sysmon, tmux: false, detached: true
+    define_flow main: false do
+      $config[:apps].map do |config|
+        -> { run_app(config.delete(:name), config: config) }
+      end.to_flow(:|)
     end
   }
 end
