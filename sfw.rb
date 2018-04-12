@@ -277,12 +277,13 @@ module Shortcuts
           dir: nil, msg: nil, verbose: true, simulate: false,
           detached: false, single: false, ignore_status: false, output: $stdout,
           interactive: false, retry_on_error: false,
-          success_msg: nil, failure_msg: nil)
+          success_msg: nil, failure_msg: nil, sudo: false)
     simulate ||= $simulate
 
     program_name = self.to_s
-    cmd = program_name.dup
-    pretty_cmd = program_name.dup
+    cmd = sudo ? "sudo" : program_name.dup
+    args.unshift(program_name.dup) if sudo
+    pretty_cmd = sudo ? "sudo" : program_name.dup
     unless args.empty?
       cmd << " "
       cmd << format_args(args)

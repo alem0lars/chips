@@ -6,10 +6,10 @@ define_flow main: true, config: true do
     true
   } |
   -> {
-    $config[:sleep_program].run
+    $config[:sleep_program].run sudo: true
   } |
   -> {
-    $config[:lock_program].run_app_if $config[:lock_program]
+    $config[:lock_program].run_app_if $config[:lock_program], detached: false
   } |
   -> {
     $config[:respawn_apps].each { |app| app.run_app }
