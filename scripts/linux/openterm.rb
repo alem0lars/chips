@@ -47,7 +47,10 @@ args += [
   title
 ]
 
-args += ["-e", "zsh", "-i"]
+# When using tmux, speedup loading using bash instead of zsh
+outer_shell = tmux ? "bash" : "zsh"
+
+args += ["-e", outer_shell, "-i"]
 
 if tmux
   if "tmux".run("has-session", "-t", title, output: ->(out, _) { out.empty? }, verbose: false)
