@@ -923,6 +923,7 @@ end
 # ──────────────────────────────────────────────────────────────── FileSystem ──
 
 def xdg_runtime_dir(*args)
+  "Invalid XDG runtime directory".perr unless ENV["XDG_RUNTIME_DIR"]
   ENV["XDG_RUNTIME_DIR"].to_pn.expand_path.join(*args.map(&:to_s))
 end
 

@@ -37,10 +37,14 @@ config = "spawn-web-apps".get_config
           }
         end
       end.compact
-      "found #{manifests_info.length.as_tok} (#{"!= 1".as_tok}) apps matching #{app[:name].as_tok}".perr if manifests_info.length != 1
-      manifest_info = manifests_info.first
-      app[:manifest] = manifest_info[:manifest]
-      app[:id] = manifest_info[:id]
+
+      if manifests_info.length == 1
+        manifest_info = manifests_info.first
+        app[:manifest] = manifest_info[:manifest]
+        app[:id] = manifest_info[:id]
+      else
+        # "found #{manifests_info.length.as_tok} (#{"!= 1".as_tok}) apps matching #{app[:name].as_tok}".perr if manifests_info.length != 1
+      end
     end
 
     avail_app_names = config[:apps].map { |app| app[:name] }
