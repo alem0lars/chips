@@ -43,7 +43,7 @@
         if $config[:template_dir].directory?
           "Using template directory at path #{$config[:template_dir].as_tok}".pinf
         else
-          "Invalid template directory at path #{config[:template_dir].as_tok}: not a directory".perr
+          "Invalid template directory at path #{$config[:template_dir].as_tok}: not a directory".perr
         end
       },
       -> () {
@@ -51,7 +51,7 @@
           if $config[:resources_dir].directory?
             "Using resources directory at path #{$config[:resources_dir].as_tok}".pinf
           else
-            "Invalid resources directory at path #{config[:resources_dir].as_tok}: not a directory".perr
+            "Invalid resources directory at path #{$config[:resources_dir].as_tok}: not a directory".perr
           end
         else
           "No resources will be available for use inside the report".pwrn
@@ -62,7 +62,7 @@
         if $config[:context_file].file?
           "Using context at path #{$config[:context_file].as_tok}".pinf
         else
-          "Invalid context at path #{config[:context_file].as_tok}: not a file".perr
+          "Invalid context at path #{$config[:context_file].as_tok}: not a file".perr
         end
       },
       -> () {

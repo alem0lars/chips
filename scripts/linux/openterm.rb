@@ -42,7 +42,7 @@ args += [
   case term
   when /rxvt/ then "-title"
   when /^st$/ then "-t"
-  else "--title"
+  else             "--title"
   end,
   title
 ]
@@ -50,7 +50,14 @@ args += [
 # When using tmux, speedup loading using bash instead of zsh
 outer_shell = tmux ? "bash" : "zsh"
 
-args += ["-e", outer_shell, "-i"]
+args += [
+  case term
+  when /^kitty$/ then nil
+  else                "-e"
+  end,
+  outer_shell,
+  "-i"
+].compact
 
 if tmux
   if "tmux".run("has-session", "-t", title, output: ->(out, _) { out.empty? }, verbose: false)
