@@ -292,6 +292,9 @@ module Shortcuts
       pretty_cmd << format_args(args, pretty: true)
     end
 
+    puts "TODO ale: args=#{args}"
+    puts "TODO ale: cmd=#{cmd}"
+
     handle_output = -> (output_data) do
       data = output_data.strip
       lines = data.split("\n")
@@ -844,20 +847,29 @@ end
 # }}}
 
 def format_args(args, pretty: false)
-  if args.is_a? Array
-    args.map { |arg| format_args(arg, pretty: pretty) }.
-      reject(&:empty?).
-      join(" ")
-  else
-    # Allow lazy evaluation of arguments
-    args = args.call if args.respond_to? :call
-
-    if pretty
-      args.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
+  fn = lambda do |args, level, pretty|
+    if args.is_a? Array
+      result = args.map { |arg| fn.call(arg, level + 1, pretty) }
+                   .reject(&:empty?)
+                   .join(" ")
+      if level > 0
+        result.escape
+      else
+        result
+      end
     else
-      args.to_s.strip.gsub(/(?:H-)+(.*)(?:-H)+/, "\1").escape
+      # Allow lazy evaluation of arguments
+      args = args.call if args.respond_to? :call
+
+      if pretty
+        args.to_s.strip.gsub(/(?:H-)+.*(?:-H)+/, "HIDDEN").escape
+      else
+        args.to_s.strip.gsub(/(?:H-)+(.*)(?:-H)+/, "\1").escape
+      end
     end
   end
+
+  fn.call(args, 0, pretty: pretty)
 end
 
 def render_dir(template_dir, output_dir,

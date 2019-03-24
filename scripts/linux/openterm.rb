@@ -54,30 +54,34 @@ args += [
   case term
   when /^kitty$/ then nil
   else                "-e"
-  end,
-  outer_shell,
-  "-i"
+  end
 ].compact
+
+cmd_args = [outer_shell, "-i"]
 
 if tmux
   if "tmux".run("has-session", "-t", title, output: ->(out, _) { out.empty? }, verbose: false)
-    args += ["-c", "tmux attach-session -t #{title}"]
+    cmd_args += ["-c", "tmux attach-session -t #{title}"]
     "attaching to existing tmux session: #{title.as_tok}".pinf
   else
     if cmd
-      args += ["-c", "tmux new-session -s #{title} #{cmd.escape}"]
+      cmd_args += ["-c", "tmux new-session -s #{title} #{cmd.escape}"]
     else
-      args += ["-c", "tmux new-session -s #{title}"]
+      cmd_args += ["-c", "tmux new-session -s #{title}"]
     end
     "creating new tmux session: #{title.as_tok}".pinf
   end
 else
   if cmd
-    args += ["-c", "#{cmd}"]
+    cmd_args += ["-c", "#{cmd}"]
   end
 end
 
+# Merge cmd_args into args.
+if term =~ /^termite$/
+  args << cmd_args
+else
+  args += cmd_args
+end
+
 term.run(*args, interactive: true)
-
-
-# vim: set filetype=ruby :
